@@ -8,11 +8,11 @@ use Illuminate\Support\Facades\Artisan;
 
 // 1. Ý TƯỞNG MỚI: Vào link gốc là vào ngay trang quản trị
 Route::get('/', function () {
-    return redirect('/users-admin');
+    return redirect('/admin');
 });
 
 // 2. Giao diện quản trị
-Route::get('/users-admin', [UserController::class, 'index']);
+Route::get('/admin', [UserController::class, 'index']);
 Route::post('/users', [UserController::class, 'store']);
 Route::put('/users/{id}', [UserController::class, 'update']);
 Route::delete('/users/{id}', [UserController::class, 'destroy']);
