@@ -10,11 +10,11 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    // Chỉ cho phép điền cột name
+    // QUAN TRỌNG: Thêm dòng này để báo Laravel đừng tìm 2 cột ngày tháng nữa
+    public $timestamps = false;
+
     protected $fillable = ['name'];
 
-    // Vì bảng không còn cột password và remember_token, 
-    // bạn nên xóa hoặc comment lại phần $hidden và casts để tránh lỗi
     protected $hidden = [];
 
     protected function casts(): array
