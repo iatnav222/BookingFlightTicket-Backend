@@ -8,40 +8,43 @@ use Illuminate\Support\Facades\Artisan;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes - Dành cho giao diện quản trị (Admin)
+| Web Routes - Quản trị (Admin CRUD)
 |--------------------------------------------------------------------------
 */
 
-Route::get('/users-admin', [UserController::class, 'index']); // Link bạn dùng để quản lý
-Route::post('/users', [UserController::class, 'store']);      // Xử lý thêm
-Route::put('/users/{id}', [UserController::class, 'update']); // Xử lý sửa
-Route::delete('/users/{id}', [UserController::class, 'destroy']); // Xử lý xóa
+Route::get('/users-admin', [UserController::class, 'index']);
+Route::post('/users', [UserController::class, 'store']);
+Route::put('/users/{id}', [UserController::class, 'update']);
+Route::delete('/users/{id}', [UserController::class, 'destroy']);
 
 /*
 |--------------------------------------------------------------------------
-| API Routes - Cung cấp dữ liệu cho Frontend (JSON)
+| API Routes - Theo đúng yêu cầu của thầy (JSON)
 |--------------------------------------------------------------------------
 */
 
-// Trả về danh sách JSON cho bạn FE
+// BASE_API/users -> Danh sách tất cả users
 Route::get('/users', function () {
-    return response()->json(User::all());
+    return response()->json(User::all(), 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 });
 
-// Trả về chi tiết 1 user JSON cho bạn FE
+// BASE_API/users/{id} -> User cụ thể
 Route::get('/users/{id}', function ($id) {
     $user = User::find($id);
     if($user) {
-        return response()->json($user);
+        return response()->json($user, 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
-    return response()->json(['message' => 'User not found'], 404);
+    return response()->json(['message' => 'User not found'], 404, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 });
 
+/*
+|--------------------------------------------------------------------------
+| Utility Routes - Cứu hộ
+|--------------------------------------------------------------------------
+*/
 
-// Route để chạy lệnh migrate:fresh từ trình duyệt
 Route::get('/init-db', function () {
     try {
-        // Lệnh này sẽ quét toàn bộ file Migration và tạo bảng vào DB cho bạn
         Artisan::call('migrate', ['--force' => true]);
         return "Đã tạo bảng thành công!";
     } catch (\Exception $e) {
