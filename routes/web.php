@@ -41,10 +41,9 @@ Route::get('/users/{id}', function ($id) {
 // Route để chạy lệnh migrate:fresh từ trình duyệt
 Route::get('/init-db', function () {
     try {
-        // Chạy lệnh làm mới database
-        Artisan::call('migrate:fresh', ['--force' => true]);
-        
-        return "Cấu trúc Database đã được làm mới thành công!";
+        // Lệnh này sẽ quét toàn bộ file Migration và tạo bảng vào DB cho bạn
+        Artisan::call('migrate', ['--force' => true]);
+        return "Đã tạo bảng thành công!";
     } catch (\Exception $e) {
         return "Lỗi: " . $e->getMessage();
     }
