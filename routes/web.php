@@ -4,6 +4,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Artisan;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,4 +35,17 @@ Route::get('/users/{id}', function ($id) {
         return response()->json($user);
     }
     return response()->json(['message' => 'User not found'], 404);
+});
+
+
+// Route để chạy lệnh migrate:fresh từ trình duyệt
+Route::get('/init-db', function () {
+    try {
+        // Chạy lệnh làm mới database
+        Artisan::call('migrate:fresh', ['--force' => true]);
+        
+        return "Cấu trúc Database đã được làm mới thành công!";
+    } catch (\Exception $e) {
+        return "Lỗi: " . $e->getMessage();
+    }
 });
