@@ -8,7 +8,7 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    // ĐÃ SỬA DÒNG NÀY: Thêm 'users' và 'users/*' vào danh sách cho phép
+    //Thêm 'users' và 'users/*' vào danh sách cho phép
     'paths' => ['api/*', 'sanctum/csrf-cookie', 'users', 'users/*'],
 
     'allowed_methods' => ['*'],
