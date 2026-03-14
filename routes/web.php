@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Artisan;
 
 // 1. Ý TƯỞNG MỚI: Vào link gốc là vào ngay trang quản trị
 Route::get('/', function () {
-    return redirect('/admin');
+    return redirect('/users');
 });
 
 // 2. Giao diện quản trị
