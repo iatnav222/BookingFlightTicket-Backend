@@ -12,6 +12,9 @@ Route::prefix('admin')->group(function () {
     Route::get('/chuyen-bay', [AdminChuyenBayController::class, 'index']);
     // Post: Thêm mới
     Route::post('/chuyen-bay', [AdminChuyenBayController::class, 'store']);
+    // Get Hiển thị chuyến bay cụ thể và Put: Cập nhật chuyến bay:
+    Route::get('/chuyen-bay/{id}', [AdminChuyenBayController::class, 'show']);
+    Route::put('/chuyen-bay/{id}', [AdminChuyenBayController::class, 'update']);
 });
 
 

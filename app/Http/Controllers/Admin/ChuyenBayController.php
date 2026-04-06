@@ -124,4 +124,77 @@ class ChuyenBayController extends Controller
             'data'    => $chuyenBay
         ], 201); // HTTP Status 201: Created (Đã tạo thành công)
     }
+    // API Lấy thông tin chi tiết 1 chuyến bay (GET)
+    public function show($id)
+    {
+        // Vẫn dùng with() để lấy kèm tên hãng, tên sân bay cho FE hiển thị đẹp
+        $chuyenBay = ChuyenBay::with(['hang_hang_khong', 'may_bay', 'san_bay_di', 'san_bay_den'])->find($id);
+
+        if (!$chuyenBay) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy chuyến bay'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lấy thông tin chuyến bay thành công',
+            'data'    => $chuyenBay
+        ], 200);
+    }
+    // API Cập nhật chuyến bay (PUT)
+    public function update(Request $request, $id)
+    {
+        $chuyenBay = ChuyenBay::find($id);
+
+        if (!$chuyenBay) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy chuyến bay để cập nhật'
+            ], 404);
+        }
+
+        // 1. Kiểm tra dữ liệu gửi lên
+        $validated = $request->validate([
+            // 'sometimes' nghĩa là: Nếu FE có gửi trường này lên thì mới bắt buộc kiểm tra các điều kiện phía sau
+            'maMayBay'       => 'sometimes|required|integer',
+            'maHang'         => 'sometimes|required|integer',
+            'maSanBayDi'     => 'sometimes|required|integer',
+            'maSanBayDen'    => 'sometimes|required|integer|different:maSanBayDi',
+            'ngayGioCatCanh' => 'sometimes|required|date',
+            'ngayGioHaCanh'  => 'sometimes|required|date|after:ngayGioCatCanh',
+            'soGheTong'      => 'sometimes|required|integer|min:1',
+            'trangThai'      => 'sometimes|nullable|boolean'
+        ], [
+            'maSanBayDen.different' => 'Sân bay đến không được trùng với sân bay đi.',
+            'ngayGioHaCanh.after'   => 'Thời gian hạ cánh phải diễn ra sau thời gian cất cánh.',
+            'required'              => 'Trường :attribute không được để trống.',
+            'integer'               => 'Trường :attribute phải là số.'
+        ]);
+
+        // 2. Logic cập nhật ghế (Rất quan trọng cho Lead BE)
+        // Nếu Admin thay đổi TỔNG SỐ GHẾ, ta phải tính lại SỐ GHẾ CÒN LẠI để không bị âm
+        if ($request->has('soGheTong') && $request->soGheTong != $chuyenBay->soGheTong) {
+            $soGheDaBan = $chuyenBay->soGheTong - $chuyenBay->soGheConLai; // Tìm ra số ghế đã bán
+            $validated['soGheConLai'] = $validated['soGheTong'] - $soGheDaBan; // Tính lại ghế còn trống
+            
+            // Nếu admin sửa tổng ghế thấp hơn số vé đã bán ra -> Chặn lại ngay!
+            if ($validated['soGheConLai'] < 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tổng số ghế mới không thể nhỏ hơn số vé đã bán ra!'
+                ], 422);
+            }
+        }
+
+        // 3. Thực hiện cập nhật
+        $chuyenBay->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật chuyến bay thành công!',
+            'data'    => $chuyenBay
+        ], 200);
+    }
 }
