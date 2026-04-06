@@ -7,9 +7,11 @@ use App\Http\Controllers\Admin\ChuyenBayController as AdminChuyenBayController;
 //API ADMIN
 Route::prefix('admin')->group(function () {
     
-    // Quản lý chuyến bay (phương thức get)
+    // QUẢN LÝ CHUYẾN BAY
+    // Get: Lấy Danh Sách
     Route::get('/chuyen-bay', [AdminChuyenBayController::class, 'index']);
-    
+    // Post: Thêm mới
+    Route::post('/chuyen-bay', [AdminChuyenBayController::class, 'store']);
 });
 
 
