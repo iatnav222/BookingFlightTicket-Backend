@@ -30,10 +30,30 @@ class ChuyenBayController extends Controller
             $query->whereDate('ngayGioCatCanh', $request->ngayDi);
         }
 
-        // 4. Tìm kiếm nhanh (Search)
+        // 4. Tìm kiếm nâng cao (Search)
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where('maChuyenBay', 'like', "%{$search}%");
+            
+            // Dùng where(function...) để gom nhóm các điều kiện OR, tránh xung đột với các điều kiện Lọc ở trên
+            $query->where(function($q) use ($search) {
+                // Tìm theo mã chuyến bay
+                $q->where('maChuyenBay', 'like', "%{$search}%")
+                  // Hoặc tìm theo tên/mã hãng hàng không
+                  ->orWhereHas('hang_hang_khong', function($qHang) use ($search) {
+                      $qHang->where('tenHang', 'like', "%{$search}%")
+                            ->orWhere('maCode', 'like', "%{$search}%");
+                  })
+                  // Hoặc tìm theo thành phố/tên sân bay đi
+                  ->orWhereHas('san_bay_di', function($qSbDi) use ($search) {
+                      $qSbDi->where('tenSanBay', 'like', "%{$search}%")
+                            ->orWhere('thanhPho', 'like', "%{$search}%");
+                  })
+                  // Hoặc tìm theo thành phố/tên sân bay đến
+                  ->orWhereHas('san_bay_den', function($qSbDen) use ($search) {
+                      $qSbDen->where('tenSanBay', 'like', "%{$search}%")
+                            ->orWhere('thanhPho', 'like', "%{$search}%");
+                  });
+            });
         }
 
         // 5. Sắp xếp chuyến bay theo thời gian cất cánh gần nhất đưa lên đầu, và lấy dữ liệu
