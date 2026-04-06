@@ -1,41 +1,26 @@
 <?php
 
-use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Artisan;
 
-// 1. Ý TƯỞNG MỚI: Vào link gốc là vào ngay trang quản trị
+// 1. Đường dẫn mặc định khi truy cập vào link gốc của Backend
 Route::get('/', function () {
-    return redirect('/users');
+    return response()->json([
+        'success' => true,
+        'message' => 'Welcome to Booking Flight Ticket API - Backend is running smoothly!',
+        'version' => '1.0'
+    ]);
 });
 
-// 2. Giao diện quản trị
-Route::get('/admin', [UserController::class, 'index']);
-Route::post('/users', [UserController::class, 'store']);
-Route::put('/users/{id}', [UserController::class, 'update']);
-Route::delete('/users/{id}', [UserController::class, 'destroy']);
-
-// 3. API cho Frontend & Thầy test (JSON)
-Route::get('/users', function () {
-    return response()->json(User::all(), 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-});
-
-Route::get('/users/{id}', function ($id) {
-    $user = User::find($id);
-    if($user) {
-        return response()->json($user, 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-    }
-    return response()->json(['message' => 'User not found'], 404, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-});
-
-// 4. Route cứu hộ
-Route::get('/init-db', function () {
-    try {
-        Artisan::call('migrate', ['--force' => true]);
-        return "Đã tạo bảng thành công!";
-    } catch (\Exception $e) {
-        return "Lỗi: " . $e->getMessage();
-    }
+// 2. (Mẹo cho Lead BE) Đường dẫn dọn rác nhanh khi đưa lên host
+// Khi có lỗi lưu cache trên host, chỉ cần gọi link domain.com/clear-cache là xong
+Route::get('/clear-cache', function() {
+    Artisan::call('cache:clear');
+    Artisan::call('config:clear');
+    Artisan::call('route:clear');
+    
+    return response()->json([
+        'success' => true,
+        'message' => 'Toàn bộ cache hệ thống đã được dọn sạch!'
+    ]);
 });

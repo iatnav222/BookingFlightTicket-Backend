@@ -8,8 +8,8 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    //Thêm 'users' và 'users/*' vào danh sách cho phép
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'users', 'users/*'],
+    // Đã xóa 'users' cũ, chỉ cần 'api/*' là đủ bao trọn toàn bộ API của bạn
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
     'allowed_methods' => ['*'],
 
