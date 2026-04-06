@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\admin;
 
 use App\Models\ChuyenBay;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 class ChuyenBayController extends Controller
@@ -29,8 +30,29 @@ class ChuyenBayController extends Controller
         if ($request->filled('ngayDi')) {
             $query->whereDate('ngayGioCatCanh', $request->ngayDi);
         }
+        // 4. Lọc theo Hãng hàng không (Khách chỉ thích bay VietJet hoặc VN Airlines)
+        if ($request->filled('maHang')) {
+            $query->where('maHang', $request->maHang);
+        }
 
-        // 4. Tìm kiếm nâng cao (Search)
+        // 5. Lọc theo Máy bay (Khách muốn né các máy bay thân hẹp, chỉ thích đi Boeing thân rộng)
+        if ($request->filled('maMayBay')) {
+            $query->where('maMayBay', $request->maMayBay);
+        }
+
+        // 6. Lọc những chuyến bay CÒN CHỖ (Rất quan trọng)
+        // Nếu FE truyền len 'chi_lay_con_cho=1' thì mình mới lọc
+        if ($request->filled('chi_lay_con_cho') && $request->chi_lay_con_cho == 1) {
+            $query->where('soGheConLai', '>', 0);
+        }
+
+        // 7. Lọc theo trạng thái, Cho phép Admin lọc theo trạng thái (0: Hủy, 1: Hoạt động)
+        // Dùng has() thay vì filled() vì giá trị 0 đôi khi bị filled() coi là rỗng
+        if ($request->has('trangThai') && $request->trangThai !== null) {
+            $query->where('trangThai', $request->trangThai);
+        }
+
+        // 8. Tìm kiếm nâng cao (Search)
         if ($request->filled('search')) {
             $search = $request->search;
             
@@ -56,10 +78,10 @@ class ChuyenBayController extends Controller
             });
         }
 
-        // 5. Sắp xếp chuyến bay theo thời gian cất cánh gần nhất đưa lên đầu, và lấy dữ liệu
+        // 9. Sắp xếp chuyến bay theo thời gian cất cánh gần nhất đưa lên đầu, và lấy dữ liệu
         $danhSach = $query->orderBy('ngayGioCatCanh', 'asc')->get();
 
-        // 6. Trả về format JSON chuẩn xác cho FE
+        // 10. Trả về format JSON chuẩn xác cho FE
         return response()->json([
             'success' => true,
             'message' => 'Lấy danh sách chuyến bay thành công',
