@@ -40,19 +40,14 @@ class ChuyenBayController extends Controller
             $query->where('maMayBay', $request->maMayBay);
         }
 
-        // 6. Lọc những chuyến bay CÒN CHỖ (Rất quan trọng)
-        // Nếu FE truyền len 'chi_lay_con_cho=1' thì mình mới lọc
-        if ($request->filled('chi_lay_con_cho') && $request->chi_lay_con_cho == 1) {
-            $query->where('soGheConLai', '>', 0);
-        }
 
-        // 7. Lọc theo trạng thái, Cho phép Admin lọc theo trạng thái (0: Hủy, 1: Hoạt động)
+        // 6. Lọc theo trạng thái, Cho phép Admin lọc theo trạng thái (0: Hủy, 1: Hoạt động)
         // Dùng has() thay vì filled() vì giá trị 0 đôi khi bị filled() coi là rỗng
         if ($request->has('trangThai') && $request->trangThai !== null) {
             $query->where('trangThai', $request->trangThai);
         }
 
-        // 8. Tìm kiếm nâng cao (Search)
+        // 7. Tìm kiếm nâng cao (Search)
         if ($request->filled('search')) {
             $search = $request->search;
             
@@ -78,10 +73,10 @@ class ChuyenBayController extends Controller
             });
         }
 
-        // 9. Sắp xếp chuyến bay theo thời gian cất cánh gần nhất đưa lên đầu, và lấy dữ liệu
+        // 8. Sắp xếp chuyến bay theo thời gian cất cánh gần nhất đưa lên đầu, và lấy dữ liệu
         $danhSach = $query->orderBy('ngayGioCatCanh', 'asc')->get();
 
-        // 10. Trả về format JSON chuẩn xác cho FE
+        // 9. Trả về format JSON chuẩn xác cho FE
         return response()->json([
             'success' => true,
             'message' => 'Lấy danh sách chuyến bay thành công',
