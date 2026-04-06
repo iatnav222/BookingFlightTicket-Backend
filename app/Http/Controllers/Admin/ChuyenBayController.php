@@ -197,4 +197,33 @@ class ChuyenBayController extends Controller
             'data'    => $chuyenBay
         ], 200);
     }
+    // API Xóa chuyến bay (DELETE)
+    public function destroy($id)
+    {
+        $chuyenBay = ChuyenBay::find($id);
+
+        if (!$chuyenBay) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy chuyến bay để xóa'
+            ], 404);
+        }
+
+        // Rào chắn bảo vệ an toàn dữ liệu
+        // Nếu số ghế còn lại NHỎ HƠN tổng số ghế -> Đã có người mua vé
+        if ($chuyenBay->soGheConLai < $chuyenBay->soGheTong) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chuyến bay đã phát sinh giao dịch đặt vé, không thể xóa. Vui lòng chuyển trạng thái sang Hủy chuyến!'
+            ], 400); // Trả về lỗi 400 Bad Request
+        }
+
+        // Nếu an toàn (chưa bán được vé nào), tiến hành xóa vĩnh viễn
+        $chuyenBay->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã xóa chuyến bay thành công!'
+        ], 200);
+    }
 }

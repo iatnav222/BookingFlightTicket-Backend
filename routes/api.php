@@ -15,6 +15,8 @@ Route::prefix('admin')->group(function () {
     // Get Hiển thị chuyến bay cụ thể và Put: Cập nhật chuyến bay:
     Route::get('/chuyen-bay/{id}', [AdminChuyenBayController::class, 'show']);
     Route::put('/chuyen-bay/{id}', [AdminChuyenBayController::class, 'update']);
+    // Xóa chuyến bay
+    Route::delete('/chuyen-bay/{id}', [AdminChuyenBayController::class, 'destroy']);
 });
 
 
