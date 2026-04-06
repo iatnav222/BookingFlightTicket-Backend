@@ -17,6 +17,11 @@ Route::prefix('admin')->group(function () {
     Route::put('/chuyen-bay/{id}', [AdminChuyenBayController::class, 'update']);
     // Delete: Xóa chuyến bay
     Route::delete('/chuyen-bay/{id}', [AdminChuyenBayController::class, 'destroy']);
+
+    //QUẢN LÝ MÁY BAY
+
+    //QUẢN LÝ HÃNG BAY
+
 });
 
 

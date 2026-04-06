@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\ChuyenBay;
+use App\Models\MayBay;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
@@ -86,43 +87,38 @@ class ChuyenBayController extends Controller
     // API Thêm mới chuyến bay (POST)
     public function store(Request $request)
     {
-        // 1. Dựng bức tường kiểm tra dữ liệu (Validation)
         $validated = $request->validate([
             'maMayBay'       => 'required|integer',
             'maHang'         => 'required|integer',
             'maSanBayDi'     => 'required|integer',
-            // Sân bay đến bắt buộc phải KHÁC sân bay đi
             'maSanBayDen'    => 'required|integer|different:maSanBayDi', 
             'ngayGioCatCanh' => 'required|date',
-            // Giờ hạ cánh bắt buộc phải SAU giờ cất cánh
             'ngayGioHaCanh'  => 'required|date|after:ngayGioCatCanh',
-            'soGheTong'      => 'required|integer|min:1',
+            // XÓA ĐIỀU KIỆN 'soGheTong' ở đây đi vì FE không cần gửi nữa
             'trangThai'      => 'nullable|boolean'
         ], [
-            // Tùy chỉnh câu báo lỗi sang tiếng Việt để FE hiển thị trực tiếp cho người dùng
             'maSanBayDen.different' => 'Sân bay đến không được trùng với sân bay đi.',
-            'ngayGioHaCanh.after'   => 'Thời gian hạ cánh phải diễn ra sau thời gian cất cánh.',
-            'required'              => 'Trường :attribute không được để trống.',
-            'integer'               => 'Trường :attribute phải là số.'
+            'ngayGioHaCanh.after'   => 'Thời gian hạ cánh phải diễn ra sau thời gian cất cánh.'
         ]);
 
-        // 2. Xử lý Logic nghiệp vụ tự động
-        // Khi mới tạo chuyến bay, chưa ai đặt vé nên Số ghế còn lại = Tổng số ghế
-        $validated['soGheConLai'] = $validated['soGheTong'];
+        // LOGIC MỚI: Truy tìm máy bay và tự động gán số ghế
+        $mayBay = MayBay::find($request->maMayBay);
+        if (!$mayBay) {
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy máy bay này!'], 404);
+        }
 
-        // Nếu FE không truyền trạng thái lên, ta cho mặc định là 1 (Hoạt động)
+        $validated['soGheTong'] = $mayBay->soGheTong;
+        $validated['soGheConLai'] = $mayBay->soGheTong; // Mới tạo thì còn trống 100%
+
         $validated['trangThai'] = $request->has('trangThai') ? $request->trangThai : 1;
 
-        // 3. Lưu dữ liệu vào Database
-        // Nhờ bạn đã thiết lập $fillable trong Model rất chuẩn, ta chỉ cần 1 dòng lệnh create()
         $chuyenBay = ChuyenBay::create($validated);
 
-        // 4. Trả về kết quả
         return response()->json([
             'success' => true,
             'message' => 'Thêm chuyến bay thành công!',
             'data'    => $chuyenBay
-        ], 201); // HTTP Status 201: Created (Đã tạo thành công)
+        ], 201);
     }
     // API Lấy thông tin chi tiết 1 chuyến bay (GET)
     public function show($id)
@@ -149,46 +145,43 @@ class ChuyenBayController extends Controller
         $chuyenBay = ChuyenBay::find($id);
 
         if (!$chuyenBay) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Không tìm thấy chuyến bay để cập nhật'
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy chuyến bay'], 404);
         }
 
-        // 1. Kiểm tra dữ liệu gửi lên
         $validated = $request->validate([
-            // 'sometimes' nghĩa là: Nếu FE có gửi trường này lên thì mới bắt buộc kiểm tra các điều kiện phía sau
             'maMayBay'       => 'sometimes|required|integer',
             'maHang'         => 'sometimes|required|integer',
             'maSanBayDi'     => 'sometimes|required|integer',
             'maSanBayDen'    => 'sometimes|required|integer|different:maSanBayDi',
             'ngayGioCatCanh' => 'sometimes|required|date',
             'ngayGioHaCanh'  => 'sometimes|required|date|after:ngayGioCatCanh',
-            'soGheTong'      => 'sometimes|required|integer|min:1',
             'trangThai'      => 'sometimes|nullable|boolean'
-        ], [
-            'maSanBayDen.different' => 'Sân bay đến không được trùng với sân bay đi.',
-            'ngayGioHaCanh.after'   => 'Thời gian hạ cánh phải diễn ra sau thời gian cất cánh.',
-            'required'              => 'Trường :attribute không được để trống.',
-            'integer'               => 'Trường :attribute phải là số.'
         ]);
 
-        // 2. Logic cập nhật ghế (Rất quan trọng cho Lead BE)
-        // Nếu Admin thay đổi TỔNG SỐ GHẾ, ta phải tính lại SỐ GHẾ CÒN LẠI để không bị âm
-        if ($request->has('soGheTong') && $request->soGheTong != $chuyenBay->soGheTong) {
-            $soGheDaBan = $chuyenBay->soGheTong - $chuyenBay->soGheConLai; // Tìm ra số ghế đã bán
-            $validated['soGheConLai'] = $validated['soGheTong'] - $soGheDaBan; // Tính lại ghế còn trống
+        // LOGIC MỚI: Nếu Admin thực hiện thao tác đổi Máy bay
+        if ($request->has('maMayBay') && $request->maMayBay != $chuyenBay->maMayBay) {
+            $mayBayMoi = MayBay::find($request->maMayBay);
             
-            // Nếu admin sửa tổng ghế thấp hơn số vé đã bán ra -> Chặn lại ngay!
-            if ($validated['soGheConLai'] < 0) {
+            if (!$mayBayMoi) {
+                return response()->json(['success' => false, 'message' => 'Máy bay mới không tồn tại!'], 404);
+            }
+
+            // Tính số vé đã bán
+            $soVeDaBan = $chuyenBay->soGheTong - $chuyenBay->soGheConLai;
+
+            // Kiểm tra an toàn: Máy bay mới phải có sức chứa lớn hơn hoặc bằng số khách đã mua vé
+            if ($mayBayMoi->soGheTong < $soVeDaBan) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Tổng số ghế mới không thể nhỏ hơn số vé đã bán ra!'
-                ], 422);
+                    'message' => "Không thể đổi máy bay! Máy bay mới chỉ có {$mayBayMoi->soGheTong} chỗ, nhưng đã bán {$soVeDaBan} vé."
+                ], 400);
             }
+
+            // Nếu an toàn, cập nhật lại toàn bộ thông số ghế
+            $validated['soGheTong'] = $mayBayMoi->soGheTong;
+            $validated['soGheConLai'] = $mayBayMoi->soGheTong - $soVeDaBan;
         }
 
-        // 3. Thực hiện cập nhật
         $chuyenBay->update($validated);
 
         return response()->json([
