@@ -83,4 +83,45 @@ class ChuyenBayController extends Controller
             'data' => $danhSach
         ], 200);
     }
+    // API Thêm mới chuyến bay (POST)
+    public function store(Request $request)
+    {
+        // 1. Dựng bức tường kiểm tra dữ liệu (Validation)
+        $validated = $request->validate([
+            'maMayBay'       => 'required|integer',
+            'maHang'         => 'required|integer',
+            'maSanBayDi'     => 'required|integer',
+            // Sân bay đến bắt buộc phải KHÁC sân bay đi
+            'maSanBayDen'    => 'required|integer|different:maSanBayDi', 
+            'ngayGioCatCanh' => 'required|date',
+            // Giờ hạ cánh bắt buộc phải SAU giờ cất cánh
+            'ngayGioHaCanh'  => 'required|date|after:ngayGioCatCanh',
+            'soGheTong'      => 'required|integer|min:1',
+            'trangThai'      => 'nullable|boolean'
+        ], [
+            // Tùy chỉnh câu báo lỗi sang tiếng Việt để FE hiển thị trực tiếp cho người dùng
+            'maSanBayDen.different' => 'Sân bay đến không được trùng với sân bay đi.',
+            'ngayGioHaCanh.after'   => 'Thời gian hạ cánh phải diễn ra sau thời gian cất cánh.',
+            'required'              => 'Trường :attribute không được để trống.',
+            'integer'               => 'Trường :attribute phải là số.'
+        ]);
+
+        // 2. Xử lý Logic nghiệp vụ tự động
+        // Khi mới tạo chuyến bay, chưa ai đặt vé nên Số ghế còn lại = Tổng số ghế
+        $validated['soGheConLai'] = $validated['soGheTong'];
+
+        // Nếu FE không truyền trạng thái lên, ta cho mặc định là 1 (Hoạt động)
+        $validated['trangThai'] = $request->has('trangThai') ? $request->trangThai : 1;
+
+        // 3. Lưu dữ liệu vào Database
+        // Nhờ bạn đã thiết lập $fillable trong Model rất chuẩn, ta chỉ cần 1 dòng lệnh create()
+        $chuyenBay = ChuyenBay::create($validated);
+
+        // 4. Trả về kết quả
+        return response()->json([
+            'success' => true,
+            'message' => 'Thêm chuyến bay thành công!',
+            'data'    => $chuyenBay
+        ], 201); // HTTP Status 201: Created (Đã tạo thành công)
+    }
 }
