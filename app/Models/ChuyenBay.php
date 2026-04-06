@@ -72,10 +72,17 @@ class ChuyenBay extends Model
 		return $this->belongsTo(MayBay::class, 'maMayBay');
 	}
 
-	public function san_bay()
-	{
-		return $this->belongsTo(SanBay::class, 'maSanBayDi');
-	}
+	// Sân bay cất cánh
+    public function san_bay_di()
+    {
+        return $this->belongsTo(SanBay::class, 'maSanBayDi');
+    }
+
+    // Sân bay hạ cánh
+    public function san_bay_den()
+    {
+        return $this->belongsTo(SanBay::class, 'maSanBayDen');
+    }
 
 	public function gia_ves()
 	{

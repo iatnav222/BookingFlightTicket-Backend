@@ -10,8 +10,8 @@ class ChuyenBayController extends Controller
     // API Lấy danh sách chuyến bay (hỗ trợ lọc và tìm kiếm)
     public function index(Request $request)
     {
-        // Khởi tạo query Builder từ Model ChuyenBay
-        $query = ChuyenBay::query();
+        // with() sẽ nhúng toàn bộ dữ liệu từ các bảng liên kết vào JSON trả về
+        $query = ChuyenBay::with(['hang_hang_khong', 'may_bay', 'san_bay_di', 'san_bay_den']);
 
         // 1. Lọc theo Sân bay đi
         // Hàm filled() sẽ kiểm tra xem tham số có được FE gửi lên VÀ có giá trị khác rỗng hay không
