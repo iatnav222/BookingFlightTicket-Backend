@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property ChuyenBay $chuyen_bay
  * @property GiaVe $gia_ve
  * @property HanhKhach $hanh_khach
- * @property MaGiamGium|null $ma_giam_gium
+ * @property MaGiamGia|null $ma_giam_gium
  * @property Taikhoan|null $taikhoan
  *
  * @package App\Models
@@ -60,32 +60,33 @@ class Ve extends Model
 	];
 
 	public function don_hang()
-	{
-		return $this->belongsTo(DonHang::class, 'maDonHang');
-	}
+    {
+        return $this->belongsTo(DonHang::class, 'maDonHang', 'maDonHang');
+    }
 
-	public function chuyen_bay()
-	{
-		return $this->belongsTo(ChuyenBay::class, 'maChuyenBay');
-	}
+    public function chuyen_bay()
+    {
+        return $this->belongsTo(ChuyenBay::class, 'maChuyenBay', 'maChuyenBay');
+    }
 
-	public function gia_ve()
-	{
-		return $this->belongsTo(GiaVe::class, 'maGiaVe');
-	}
+    public function gia_ve()
+    {
+        return $this->belongsTo(GiaVe::class, 'maGiaVe', 'maGiaVe');
+    }
 
-	public function hanh_khach()
-	{
-		return $this->belongsTo(HanhKhach::class, 'maHanhKhach');
-	}
+    public function hanh_khach()
+    {
+        return $this->belongsTo(HanhKhach::class, 'maHanhKhach', 'maHanhKhach');
+    }
 
-	public function ma_giam_gium()
-	{
-		return $this->belongsTo(MaGiamGium::class, 'maGiamGia');
-	}
+    // Đã sửa lại tên hàm và tên class cho đúng chính tả
+    public function ma_giam_gia() 
+    {
+        return $this->belongsTo(MaGiamGia::class, 'maGiamGia', 'maGiamGia');
+    }
 
-	public function taikhoan()
-	{
-		return $this->belongsTo(Taikhoan::class, 'maTK');
-	}
+    public function taikhoan()
+    {
+        return $this->belongsTo(Taikhoan::class, 'maTK', 'maTK');
+    }
 }

@@ -48,7 +48,8 @@ class ThanhToan extends Model
 	];
 
 	public function don_hang()
-	{
-		return $this->belongsTo(DonHang::class, 'maDonHang');
-	}
+    {
+        // Thanh toán này thuộc về đơn hàng nào (Khóa ngoại: maDonHang, Khóa chính bảng DonHang: maDonHang)
+        return $this->belongsTo(DonHang::class, 'maDonHang', 'maDonHang');
+    }
 }

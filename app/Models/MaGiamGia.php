@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Class MaGiamGium
+ * Class MaGiamGia
  * 
  * @property int $maGiamGia
  * @property float $giamPhanTram
@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @package App\Models
  */
-class MaGiamGium extends Model
+class MaGiamGia extends Model
 {
 	protected $table = 'ma_giam_gia';
 	protected $primaryKey = 'maGiamGia';
@@ -55,7 +55,7 @@ class MaGiamGium extends Model
 	];
 
 	public function ves()
-	{
-		return $this->hasMany(Ve::class, 'maGiamGia');
-	}
+    {
+        return $this->hasMany(Ve::class, 'maGiamGia', 'maGiamGia');
+    }
 }

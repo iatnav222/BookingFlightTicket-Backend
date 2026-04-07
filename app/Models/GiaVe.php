@@ -44,12 +44,14 @@ class GiaVe extends Model
 	];
 
 	public function chuyen_bay()
-	{
-		return $this->belongsTo(ChuyenBay::class, 'maChuyenBay');
-	}
+    {
+        // Thuộc về chuyến bay nào (Khóa ngoại: maChuyenBay, Khóa chính của bảng ChuyenBay: maChuyenBay)
+        return $this->belongsTo(ChuyenBay::class, 'maChuyenBay', 'maChuyenBay');
+    }
 
-	public function ves()
-	{
-		return $this->hasMany(Ve::class, 'maGiaVe');
-	}
+    public function ves()
+    {
+        // Có nhiều vé (Khóa ngoại bên bảng Ve: maGiaVe, Khóa chính bảng này: maGiaVe)
+        return $this->hasMany(Ve::class, 'maGiaVe', 'maGiaVe');
+    }
 }

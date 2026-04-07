@@ -35,8 +35,17 @@ class SanBay extends Model
 		'thanhPho'
 	];
 
-	public function chuyen_bays()
-	{
-		return $this->hasMany(ChuyenBay::class, 'maSanBayDi');
-	}
+	// Danh sách các chuyến bay CẤT CÁNH từ sân bay này
+    public function chuyen_bay_dis()
+    {
+        // Tham số 3: khóa chính của bảng SanBay
+        return $this->hasMany(ChuyenBay::class, 'maSanBayDi', 'maSanBay');
+    }
+
+    // Danh sách các chuyến bay HẠ CÁNH xuống sân bay này
+    public function chuyen_bay_dens()
+    {
+        // Tham số 3: khóa chính của bảng SanBay
+        return $this->hasMany(ChuyenBay::class, 'maSanBayDen', 'maSanBay');
+    }
 }

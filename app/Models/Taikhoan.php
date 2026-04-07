@@ -8,7 +8,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
 /**
  * Class Taikhoan
@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @package App\Models
  */
-class Taikhoan extends Model
+class Taikhoan extends Authenticatable
 {
 	protected $table = 'taikhoan';
 	protected $primaryKey = 'maTK';
@@ -56,27 +56,28 @@ class Taikhoan extends Model
 	];
 
 	public function don_hangs()
-	{
-		return $this->hasMany(DonHang::class, 'maTK');
-	}
+    {
+        return $this->hasMany(DonHang::class, 'maTK', 'maTK');
+    }
 
-	public function hanh_khaches()
-	{
-		return $this->hasMany(HanhKhach::class, 'maTK');
-	}
+    public function hanh_khaches()
+    {
+        return $this->hasMany(HanhKhach::class, 'maTK', 'maTK');
+    }
 
-	public function lich_su_dang_nhaps()
-	{
-		return $this->hasMany(LichSuDangNhap::class, 'maTK');
-	}
+    public function lich_su_dang_nhaps()
+    {
+        return $this->hasMany(LichSuDangNhap::class, 'maTK', 'maTK');
+    }
 
-	public function thongtin_canhan()
-	{
-		return $this->hasOne(ThongtinCanhan::class, 'maTK');
-	}
+    public function thongtin_canhan()
+    {
+        // hasOne cũng tuân thủ quy tắc 3 tham số giống hasMany
+        return $this->hasOne(ThongtinCanhan::class, 'maTK', 'maTK');
+    }
 
-	public function ves()
-	{
-		return $this->hasMany(Ve::class, 'maTK');
-	}
+    public function ves()
+    {
+        return $this->hasMany(Ve::class, 'maTK', 'maTK');
+    }
 }

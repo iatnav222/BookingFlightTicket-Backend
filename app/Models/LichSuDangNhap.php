@@ -42,7 +42,8 @@ class LichSuDangNhap extends Model
 	];
 
 	public function taikhoan()
-	{
-		return $this->belongsTo(Taikhoan::class, 'maTK');
-	}
+    {
+        // Lịch sử này của tài khoản nào (Khóa ngoại: maTK, Khóa chính bảng Taikhoan: maTK)
+        return $this->belongsTo(Taikhoan::class, 'maTK', 'maTK');
+    }
 }

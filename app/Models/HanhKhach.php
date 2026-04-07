@@ -51,12 +51,14 @@ class HanhKhach extends Model
 	];
 
 	public function taikhoan()
-	{
-		return $this->belongsTo(Taikhoan::class, 'maTK');
-	}
+    {
+        // Khách hàng này do tài khoản nào đặt (Khóa ngoại: maTK, Khóa chính bảng Taikhoan: maTK)
+        return $this->belongsTo(Taikhoan::class, 'maTK', 'maTK');
+    }
 
-	public function ves()
-	{
-		return $this->hasMany(Ve::class, 'maHanhKhach');
-	}
+    public function ves()
+    {
+        // Khách hàng này sở hữu những vé nào (Khóa ngoại bảng Ve: maHanhKhach, Khóa chính bảng này: maHanhKhach)
+        return $this->hasMany(Ve::class, 'maHanhKhach', 'maHanhKhach');
+    }
 }

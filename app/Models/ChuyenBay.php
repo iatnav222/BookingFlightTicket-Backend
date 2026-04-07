@@ -63,34 +63,34 @@ class ChuyenBay extends Model
 	];
 
 	public function hang_hang_khong()
-	{
-		return $this->belongsTo(HangHangKhong::class, 'maHang');
-	}
+    {
+        return $this->belongsTo(HangHangKhong::class, 'maHang', 'maHang');
+    }
 
-	public function may_bay()
-	{
-		return $this->belongsTo(MayBay::class, 'maMayBay');
-	}
+    public function may_bay()
+    {
+        return $this->belongsTo(MayBay::class, 'maMayBay', 'maMayBay');
+    }
 
-	// Sân bay cất cánh
+    // Sân bay cất cánh (Khóa chính của bảng SanBay là maSanBay)
     public function san_bay_di()
     {
-        return $this->belongsTo(SanBay::class, 'maSanBayDi');
+        return $this->belongsTo(SanBay::class, 'maSanBayDi', 'maSanBay');
     }
 
-    // Sân bay hạ cánh
+    // Sân bay hạ cánh (Khóa chính của bảng SanBay là maSanBay)
     public function san_bay_den()
     {
-        return $this->belongsTo(SanBay::class, 'maSanBayDen');
+        return $this->belongsTo(SanBay::class, 'maSanBayDen', 'maSanBay');
     }
 
-	public function gia_ves()
-	{
-		return $this->hasMany(GiaVe::class, 'maChuyenBay');
-	}
+    public function gia_ves()
+    {
+        return $this->hasMany(GiaVe::class, 'maChuyenBay', 'maChuyenBay');
+    }
 
-	public function ves()
-	{
-		return $this->hasMany(Ve::class, 'maChuyenBay');
-	}
+    public function ves()
+    {
+        return $this->hasMany(Ve::class, 'maChuyenBay', 'maChuyenBay');
+    }
 }

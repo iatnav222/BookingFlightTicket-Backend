@@ -42,13 +42,15 @@ class HangHangKhong extends Model
 		'trangThai'
 	];
 
-	public function chuyen_bays()
-	{
-		return $this->hasMany(ChuyenBay::class, 'maHang');
-	}
+    public function chuyen_bays()
+    {
+        // Tham số 3: khóa chính của bảng HangHangKhong
+        return $this->hasMany(ChuyenBay::class, 'maHang', 'maHang');
+    }
 
-	public function may_bays()
-	{
-		return $this->hasMany(MayBay::class, 'maHang');
-	}
+    public function may_bays()
+    {
+        // Tham số 3: khóa chính của bảng HangHangKhong
+        return $this->hasMany(MayBay::class, 'maHang', 'maHang');
+    }
 }

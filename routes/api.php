@@ -3,7 +3,8 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\ChuyenBayController as AdminChuyenBayController;
-
+use App\Http\Controllers\Admin\HangHangKhongController as AdminHangHangKhongController;
+use App\Http\Controllers\Admin\MayBayController as AdminMayBayController; 
 //API ADMIN
 Route::prefix('admin')->group(function () {
     
@@ -19,8 +20,10 @@ Route::prefix('admin')->group(function () {
     Route::delete('/chuyen-bay/{id}', [AdminChuyenBayController::class, 'destroy']);
 
     //QUẢN LÝ MÁY BAY
+    Route::get('/may-bay', [AdminMayBayController::class, 'index']);
 
     //QUẢN LÝ HÃNG BAY
+    Route::get('/hang-bay', [AdminHangHangKhongController::class, 'index']);
 
 });
 

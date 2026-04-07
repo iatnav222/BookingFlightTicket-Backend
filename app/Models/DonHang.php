@@ -54,17 +54,20 @@ class DonHang extends Model
 	];
 
 	public function taikhoan()
-	{
-		return $this->belongsTo(Taikhoan::class, 'maTK');
-	}
+    {
+        // belongsTo: Model liên kết, khóa ngoại ở bảng DonHang, khóa chính ở bảng Taikhoan
+        return $this->belongsTo(Taikhoan::class, 'maTK', 'maTK');
+    }
 
-	public function thanh_toans()
-	{
-		return $this->hasMany(ThanhToan::class, 'maDonHang');
-	}
+    public function thanh_toans()
+    {
+        // hasMany: Model liên kết, khóa ngoại ở bảng ThanhToan, khóa chính ở bảng DonHang
+        return $this->hasMany(ThanhToan::class, 'maDonHang', 'maDonHang');
+    }
 
-	public function ves()
-	{
-		return $this->hasMany(Ve::class, 'maDonHang');
-	}
+    public function ves()
+    {
+        // hasMany: Model liên kết, khóa ngoại ở bảng Ve, khóa chính ở bảng DonHang
+        return $this->hasMany(Ve::class, 'maDonHang', 'maDonHang');
+    }
 }

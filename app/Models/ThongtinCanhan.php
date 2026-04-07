@@ -36,6 +36,7 @@ class ThongtinCanhan extends Model
 	];
 
 	protected $fillable = [
+		'maTK',
 		'hoTen',
 		'ngaySinh',
 		'gioiTinh',
@@ -44,7 +45,8 @@ class ThongtinCanhan extends Model
 	];
 
 	public function taikhoan()
-	{
-		return $this->belongsTo(Taikhoan::class, 'maTK');
-	}
+    {
+        // Thông tin này thuộc về tài khoản nào (Khóa ngoại: maTK, Khóa chính bảng Taikhoan: maTK)
+        return $this->belongsTo(Taikhoan::class, 'maTK', 'maTK');
+    }
 }

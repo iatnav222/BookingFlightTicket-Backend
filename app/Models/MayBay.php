@@ -43,13 +43,17 @@ class MayBay extends Model
 		'hangSanXuat'
 	];
 
-	public function hang_hang_khong()
-	{
-		return $this->belongsTo(HangHangKhong::class, 'maHang');
-	}
+    public function hang_hang_khong()
+    {
+        // Thêm tham số thứ 3: khóa chính của bảng HangHangKhong
+        // Cú pháp: belongsTo(Model::class, 'khoa_ngoai_o_bang_hien_tai', 'khoa_chinh_o_bang_kia')
+        return $this->belongsTo(HangHangKhong::class, 'maHang', 'maHang');
+    }
 
-	public function chuyen_bays()
-	{
-		return $this->hasMany(ChuyenBay::class, 'maMayBay');
-	}
+    public function chuyen_bays()
+    {
+        // Thêm tham số thứ 3: khóa chính của bảng hiện tại (MayBay)
+        // Cú pháp: hasMany(Model::class, 'khoa_ngoai_o_bang_kia', 'khoa_chinh_o_bang_hien_tai')
+        return $this->hasMany(ChuyenBay::class, 'maMayBay', 'maMayBay');
+    }
 }
