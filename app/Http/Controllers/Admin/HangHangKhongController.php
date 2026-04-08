@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use App\Http\Controllers\Controller;
 use App\Models\HangHangKhong;
 use App\Models\MayBay;
@@ -89,7 +90,7 @@ class HangHangKhongController extends Controller
 
         // Upload logo lên Cloudinary
         if ($request->hasFile('logo')) {
-            $uploadResult  = cloudinary()->upload($request->file('logo')->getRealPath(), [
+            $uploadResult = Cloudinary::upload($request->file('logo')->getRealPath(), [
                 'folder' => 'hang_hang_khong'
             ]);
             // Lưu URL đầy đủ vào DB
@@ -167,9 +168,9 @@ class HangHangKhongController extends Controller
         // Nếu có ảnh mới: xóa ảnh cũ trên Cloudinary rồi upload ảnh mới
         if ($request->hasFile('logo')) {
             if ($hangHangKhong->logo) {
-                cloudinary()->destroy($this->getCloudinaryPublicId($hangHangKhong->logo));
+                Cloudinary::destroy($this->getCloudinaryPublicId($hangHangKhong->logo));
             }
-            $uploadResult = cloudinary()->upload($request->file('logo')->getRealPath(), [
+            $uploadResult = Cloudinary::upload($request->file('logo')->getRealPath(), [
                 'folder' => 'hang_hang_khong'
             ]);
             $data['logo'] = $uploadResult->getSecurePath();
@@ -210,7 +211,7 @@ class HangHangKhongController extends Controller
 
         // Xóa ảnh trên Cloudinary (nếu có)
         if ($hangHangKhong->logo) {
-            cloudinary()->destroy($this->getCloudinaryPublicId($hangHangKhong->logo));
+            Cloudinary::destroy($this->getCloudinaryPublicId($hangHangKhong->logo));
         }
 
         $hangHangKhong->delete();

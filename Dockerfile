@@ -13,6 +13,12 @@ ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
+# --- DÒNG THÊM MỚI BẮT ĐẦU TỪ ĐÂY ---
+# Ép Apache lắng nghe trên cổng động do Render cấp ($PORT)
+RUN sed -s -i -e "s/80/\${PORT}/" /etc/apache2/ports.conf
+RUN sed -s -i -e "s/VirtualHost \*:80/VirtualHost \*:\${PORT}/" /etc/apache2/sites-available/000-default.conf
+# --- KẾT THÚC DÒNG THÊM MỚI ---
+
 # Copy toàn bộ code của bạn vào container
 COPY . /var/www/html
 
