@@ -16,7 +16,7 @@ class HangHangKhongController extends Controller
      * Lấy danh sách Hãng hàng không
      */
     /**
-     * Lấy danh sách Hãng hàng không (Có link ảnh đầy đủ)
+     * Lấy danh sách Hãng hàng không
      */
     public function index(Request $request)
     {
@@ -60,7 +60,6 @@ class HangHangKhongController extends Controller
         $validator = Validator::make($request->all(), [
             'tenHang'   => 'required|string|max:100',
             'maCode'    => 'required|string|max:10|unique:hang_hang_khong,maCode',
-            'quocGia'   => 'required|string|max:100',
             // Chỉ chấp nhận file ảnh, dung lượng tối đa 2MB (2048 KB)
             'logo'      => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
             'trangThai' => 'nullable|boolean'
@@ -68,7 +67,6 @@ class HangHangKhongController extends Controller
             'tenHang.required' => 'Vui lòng nhập tên hãng hàng không.',
             'maCode.required'  => 'Vui lòng nhập mã code hãng.',
             'maCode.unique'    => 'Mã code này đã tồn tại.',
-            'quocGia.required' => 'Vui lòng nhập quốc gia.',
             'logo.image'       => 'File tải lên phải là hình ảnh.',
             'logo.mimes'       => 'Ảnh phải có định dạng: jpeg, png, jpg, gif.',
             'logo.max'         => 'Dung lượng ảnh không được vượt quá 2MB.'
@@ -157,14 +155,12 @@ class HangHangKhongController extends Controller
             'tenHang'   => 'required|string|max:100',
             // Lưu ý chỗ này: Bỏ qua kiểm tra trùng lặp với chính maHang hiện tại
             'maCode'    => 'required|string|max:10|unique:hang_hang_khong,maCode,' . $id . ',maHang',
-            'quocGia'   => 'required|string|max:100',
             'logo'      => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
             'trangThai' => 'nullable|boolean'
         ], [
             'tenHang.required' => 'Vui lòng nhập tên hãng.',
             'maCode.required'  => 'Vui lòng nhập mã code.',
             'maCode.unique'    => 'Mã code này đã tồn tại.',
-            'quocGia.required' => 'Vui lòng nhập quốc gia.',
             'logo.image'       => 'File tải lên phải là hình ảnh.',
             'logo.mimes'       => 'Ảnh phải có định dạng: jpeg, png, jpg, gif.',
             'logo.max'         => 'Dung lượng ảnh không được vượt quá 2MB.'
