@@ -39,7 +39,7 @@ class DonHang extends Model
 		'maTK' => 'int',
 		'ngayDat' => 'datetime',
 		'tongTien' => 'float',
-		'trangThai' => 'bool'
+		'trangThai' => 'int'
 	];
 
 	protected $fillable = [
