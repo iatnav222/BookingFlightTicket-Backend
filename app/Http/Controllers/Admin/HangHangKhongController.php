@@ -8,40 +8,46 @@ use App\Models\MayBay;
 use App\Models\ChuyenBay;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
 
 class HangHangKhongController extends Controller
 {
-    /**
-     * Lấy danh sách Hãng hàng không
-     */
-    /**
-     * Lấy danh sách Hãng hàng không
-     */
+    // Lấy public_id từ URL Cloudinary để xóa ảnh
+    private function getCloudinaryPublicId(string $url): string
+    {
+        // URL dạng: https://res.cloudinary.com/cloud/image/upload/v123/hang_hang_khong/abc.jpg
+        // Lấy phần từ folder trở đi, bỏ đuôi file
+        $path = parse_url($url, PHP_URL_PATH); // /cloud/image/upload/v123/hang_hang_khong/abc.jpg
+        // Bỏ phần /cloud/image/upload/vXXX/
+        $parts = explode('/upload/', $path);
+        $afterUpload = $parts[1]; // v123/hang_hang_khong/abc.jpg
+        // Bỏ version nếu có (bắt đầu bằng v + số)
+        $afterUpload = preg_replace('/^v\d+\//', '', $afterUpload);
+        // Bỏ đuôi file (.jpg, .png, ...)
+        return preg_replace('/\.[^.]+$/', '', $afterUpload);
+    }
+
+    // API Lấy danh sách hãng hàng không
     public function index(Request $request)
     {
         $query = HangHangKhong::query();
 
-        // 1. Tìm kiếm và Lọc (giữ nguyên logic cũ)
-        if ($request->has('search') && $request->search != '') {
-            $search = $request->input('search');
-            $query->where(function($q) use ($search) {
-                $q->where('tenHang', 'LIKE', "%{$search}%")
-                  ->orWhere('maCode', 'LIKE', "%{$search}%");
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('tenHang', 'like', "%{$search}%")
+                  ->orWhere('maCode', 'like', "%{$search}%");
             });
         }
 
         if ($request->has('trangThai') && $request->trangThai !== null) {
-            $query->where('trangThai', $request->input('trangThai'));
+            $query->where('trangThai', $request->trangThai);
         }
 
-        // 2. Lấy danh sách
         $danhSach = $query->orderBy('maHang', 'desc')->get();
 
-        // 3. BIẾN ĐỔI DỮ LIỆU: Thêm link ảnh đầy đủ cho từng phần tử
+        // logo trong DB đã là URL Cloudinary đầy đủ, chỉ cần map sang logo_url cho FE
         $danhSach->transform(function ($item) {
-            // Tạo thêm một thuộc tính ảo logo_url cho mỗi hãng
-            $item->logo_url = $item->logo ? asset('storage/' . $item->logo) : null;
+            $item->logo_url = $item->logo ?? null;
             return $item;
         });
 
@@ -51,25 +57,23 @@ class HangHangKhongController extends Controller
             'data'    => $danhSach
         ], 200);
     }
-    /**
-     * Thêm mới Hãng hàng không (Có xử lý upload Logo)
-     */
+
+    // API Thêm mới hãng hàng không
     public function store(Request $request)
     {
-        // 1. Kiểm tra dữ liệu (Nâng cấp rule cho biến 'logo' thành dạng file ảnh)
         $validator = Validator::make($request->all(), [
             'tenHang'   => 'required|string|max:100',
             'maCode'    => 'required|string|max:10|unique:hang_hang_khong,maCode',
-            // Chỉ chấp nhận file ảnh, dung lượng tối đa 2MB (2048 KB)
-            'logo'      => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
-            'trangThai' => 'nullable|boolean'
+            'logo'      => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'ghiChu'    => 'nullable|string',
+            'trangThai' => 'nullable|boolean',
         ], [
             'tenHang.required' => 'Vui lòng nhập tên hãng hàng không.',
             'maCode.required'  => 'Vui lòng nhập mã code hãng.',
             'maCode.unique'    => 'Mã code này đã tồn tại.',
             'logo.image'       => 'File tải lên phải là hình ảnh.',
             'logo.mimes'       => 'Ảnh phải có định dạng: jpeg, png, jpg, gif.',
-            'logo.max'         => 'Dung lượng ảnh không được vượt quá 2MB.'
+            'logo.max'         => 'Dung lượng ảnh không được vượt quá 2MB.',
         ]);
 
         if ($validator->fails()) {
@@ -80,31 +84,20 @@ class HangHangKhongController extends Controller
             ], 422);
         }
 
-        $data = $request->except('logo'); // Lấy hết dữ liệu, trừ cái file logo ra để xử lý riêng
-        
-        if (!isset($data['trangThai'])) {
-            $data['trangThai'] = 1;
-        }
+        $data = $request->except('logo');
+        $data['trangThai'] = $data['trangThai'] ?? 1;
 
-        // 2. Xử lý Upload file Logo
+        // Upload logo lên Cloudinary
         if ($request->hasFile('logo')) {
-            $file = $request->file('logo');
-            // Đổi tên file để không bị trùng (Ví dụ: 1698765432_VN.png)
-            $filename = time() . '_' . $file->getClientOriginalName();
-            
-            // Lưu file vào thư mục: storage/app/public/logos
-            $path = $file->storeAs('logos', $filename, 'public');
-            
-            // Gán đường dẫn vào mảng data để lưu xuống Database (chỉ lưu: logos/ten_file.png)
-            $data['logo'] = $path;
+            $uploadResult  = cloudinary()->upload($request->file('logo')->getRealPath(), [
+                'folder' => 'hang_hang_khong'
+            ]);
+            // Lưu URL đầy đủ vào DB
+            $data['logo'] = $uploadResult->getSecurePath();
         }
 
-        // 3. Lưu vào Database
         $hangHangKhong = HangHangKhong::create($data);
-
-        // 4. Trả về kết quả (Kèm theo link ảnh đầy đủ cho FE hiển thị)
-        // Nếu có logo, tạo ra một link dạng http://localhost:8000/storage/logos/...
-        $hangHangKhong->logo_url = $hangHangKhong->logo ? asset('storage/' . $hangHangKhong->logo) : null;
+        $hangHangKhong->logo_url = $hangHangKhong->logo ?? null;
 
         return response()->json([
             'success' => true,
@@ -112,15 +105,12 @@ class HangHangKhongController extends Controller
             'data'    => $hangHangKhong
         ], 201);
     }
-    /**
-     * Lấy chi tiết một Hãng hàng không
-     */
+
+    // API Lấy chi tiết một hãng hàng không
     public function show($id)
     {
-        // 1. Tìm hãng hàng không theo khóa chính (maHang)
         $hangHangKhong = HangHangKhong::find($id);
 
-        // 2. Nếu không tìm thấy, trả về lỗi 404 (Not Found)
         if (!$hangHangKhong) {
             return response()->json([
                 'success' => false,
@@ -128,19 +118,18 @@ class HangHangKhongController extends Controller
             ], 404);
         }
 
-        // 3. Gắn thêm link ảnh đầy đủ tương tự như hàm index và store
-        $hangHangKhong->logo_url = $hangHangKhong->logo ? asset('storage/' . $hangHangKhong->logo) : null;
+        $hangHangKhong->logo_url = $hangHangKhong->logo ?? null;
 
-        // 4. Trả về kết quả
         return response()->json([
             'success' => true,
             'message' => 'Lấy thông tin chi tiết thành công',
             'data'    => $hangHangKhong
         ], 200);
     }
+
+    // API Cập nhật hãng hàng không
     public function update(Request $request, $id)
     {
-        // 1. Tìm hãng hàng không
         $hangHangKhong = HangHangKhong::find($id);
 
         if (!$hangHangKhong) {
@@ -150,20 +139,19 @@ class HangHangKhongController extends Controller
             ], 404);
         }
 
-        // 2. Kiểm tra dữ liệu
         $validator = Validator::make($request->all(), [
-            'tenHang'   => 'required|string|max:100',
-            // Lưu ý chỗ này: Bỏ qua kiểm tra trùng lặp với chính maHang hiện tại
-            'maCode'    => 'required|string|max:10|unique:hang_hang_khong,maCode,' . $id . ',maHang',
-            'logo'      => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
-            'trangThai' => 'nullable|boolean'
+            'tenHang'   => 'sometimes|required|string|max:100',
+            'maCode'    => 'sometimes|required|string|max:10|unique:hang_hang_khong,maCode,' . $id . ',maHang',
+            'logo'      => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'ghiChu'    => 'nullable|string',
+            'trangThai' => 'nullable|boolean',
         ], [
             'tenHang.required' => 'Vui lòng nhập tên hãng.',
             'maCode.required'  => 'Vui lòng nhập mã code.',
             'maCode.unique'    => 'Mã code này đã tồn tại.',
             'logo.image'       => 'File tải lên phải là hình ảnh.',
             'logo.mimes'       => 'Ảnh phải có định dạng: jpeg, png, jpg, gif.',
-            'logo.max'         => 'Dung lượng ảnh không được vượt quá 2MB.'
+            'logo.max'         => 'Dung lượng ảnh không được vượt quá 2MB.',
         ]);
 
         if ($validator->fails()) {
@@ -176,26 +164,19 @@ class HangHangKhongController extends Controller
 
         $data = $request->except('logo');
 
-        // 3. Xử lý Ảnh (Nếu người dùng có chọn ảnh mới)
+        // Nếu có ảnh mới: xóa ảnh cũ trên Cloudinary rồi upload ảnh mới
         if ($request->hasFile('logo')) {
-            // Xóa ảnh cũ đi (nếu có) để đỡ tốn dung lượng server
             if ($hangHangKhong->logo) {
-                Storage::disk('public')->delete($hangHangKhong->logo);
+                cloudinary()->destroy($this->getCloudinaryPublicId($hangHangKhong->logo));
             }
-
-            // Lưu ảnh mới
-            $file = $request->file('logo');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $path = $file->storeAs('logos', $filename, 'public');
-            
-            $data['logo'] = $path;
+            $uploadResult = cloudinary()->upload($request->file('logo')->getRealPath(), [
+                'folder' => 'hang_hang_khong'
+            ]);
+            $data['logo'] = $uploadResult->getSecurePath();
         }
 
-        // 4. Cập nhật vào Database
         $hangHangKhong->update($data);
-
-        // 5. Trả về kết quả cho FE
-        $hangHangKhong->logo_url = $hangHangKhong->logo ? asset('storage/' . $hangHangKhong->logo) : null;
+        $hangHangKhong->logo_url = $hangHangKhong->logo ?? null;
 
         return response()->json([
             'success' => true,
@@ -203,6 +184,8 @@ class HangHangKhongController extends Controller
             'data'    => $hangHangKhong
         ], 200);
     }
+
+    // API Xóa hãng hàng không
     public function destroy($id)
     {
         $hangHangKhong = HangHangKhong::find($id);
@@ -214,34 +197,27 @@ class HangHangKhongController extends Controller
             ], 404);
         }
 
-        // KIỂM TRA ĐIỀU KIỆN RÀNG BUỘC
-        $coMayBay = MayBay::where('maHang', $id)->exists();
-        
-        // Lưu ý: Đoạn này giả sử bảng chuyen_bay của bạn có chứa cột maHang.
-        // Nếu cấu trúc DB của bạn khác (ví dụ chuyến bay chỉ liên kết với máy bay) thì hãy điều chỉnh lại tên cột cho khớp nhé.
+        // Kiểm tra ràng buộc
+        $coMayBay    = MayBay::where('maHang', $id)->exists();
         $coChuyenBay = ChuyenBay::where('maHang', $id)->exists();
 
-        // Nếu có máy bay HOẶC có chuyến bay thì chặn lại ngay
         if ($coMayBay || $coChuyenBay) {
             return response()->json([
                 'success' => false,
                 'message' => 'Không thể xóa! Hãng hàng không này đang có máy bay hoặc chuyến bay hoạt động.'
-            ], 400); 
+            ], 400);
         }
 
-        // XỬ LÝ XÓA FILE ẢNH TRÊN SERVER
+        // Xóa ảnh trên Cloudinary (nếu có)
         if ($hangHangKhong->logo) {
-            if (Storage::disk('public')->exists($hangHangKhong->logo)) {
-                Storage::disk('public')->delete($hangHangKhong->logo);
-            }
+            cloudinary()->destroy($this->getCloudinaryPublicId($hangHangKhong->logo));
         }
 
-        // Xóa bản ghi trong Database
         $hangHangKhong->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'Đã xóa hãng hàng không và logo liên quan thành công.'
+            'message' => 'Đã xóa hãng hàng không thành công.'
         ], 200);
     }
 }
