@@ -19,12 +19,16 @@ Route::prefix('admin')->group(function () {
     // Delete: Xóa chuyến bay
     Route::delete('/chuyen-bay/{id}', [AdminChuyenBayController::class, 'destroy']);
 
-    //QUẢN LÝ MÁY BAY
-    Route::get('/may-bay', [AdminMayBayController::class, 'index']);
+    // QUẢN LÝ MÁY BAY
+    // Route::get('/may-bay', [AdminMayBayController::class, 'index']);
 
-    //QUẢN LÝ HÃNG BAY
-    Route::get('/hang-bay', [AdminHangHangKhongController::class, 'index']);
-
+    // QUẢN LÝ HÃNG BAY
+    // Get: Lấy Danh Sách
+    Route::get('/hang-hang-khong', [AdminHangHangKhongController::class, 'index']);
+    Route::post('/hang-hang-khong', [AdminHangHangKhongController::class, 'store']);       // Thêm mới
+    Route::get('/hang-hang-khong/{id}', [AdminHangHangKhongController::class, 'show']);    // Xem chi tiết 1 hãng
+    Route::put('/hang-hang-khong/{id}', [AdminHangHangKhongController::class, 'update']);  // Cập nhật
+    Route::delete('/hang-hang-khong/{id}', [AdminHangHangKhongController::class, 'destroy']); // Xóa
 });
 
 
