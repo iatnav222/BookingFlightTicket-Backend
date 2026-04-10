@@ -169,8 +169,21 @@ class HangHangKhongController extends Controller
         // Nếu có ảnh mới: xóa ảnh cũ trên Cloudinary rồi upload ảnh mới
         if ($request->hasFile('logo')) {
             if ($hangHangKhong->logo) {
-                Cloudinary::uploadApi()->destroy($this->getCloudinaryPublicId($hangHangKhong->logo));
+                // 1. Lấy public_id
+                $public_id = $this->getCloudinaryPublicId($hangHangKhong->logo);
+
+                // 2. CHẶN LỖI: Chỉ gọi lệnh xóa nếu public_id không bị rỗng/null
+                if (!empty($public_id)) {
+                    try {
+                        Cloudinary::uploadApi()->destroy($public_id);
+                    } catch (\Exception $e) {
+                        // Dùng try-catch để lỡ Cloudinary có lỗi (mạng lag, ảnh không tồn tại...) 
+                        // thì Server vẫn chạy tiếp chứ không bị sập (lỗi 500)
+                    }
+                }
             }
+
+            // 3. Upload ảnh mới lên Cloudinary
             $uploadResult = Cloudinary::uploadApi()->upload($request->file('logo')->getRealPath(), [
                 'folder' => 'hang_hang_khong'
             ]);
