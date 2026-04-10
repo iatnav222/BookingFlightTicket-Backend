@@ -201,8 +201,20 @@ class KhuyenMaiController extends Controller
         // Nếu có ảnh mới: xóa ảnh cũ trên Cloudinary rồi upload ảnh mới
         if ($request->hasFile('anh')) {
             if ($maGiamGia->anh) {
-                Cloudinary::uploadApi()->destroy($this->getCloudinaryPublicId($maGiamGia->anh));
+                // 1. Lấy public_id an toàn
+                $public_id = $this->getCloudinaryPublicId($maGiamGia->anh);
+
+                // 2. Chặn lỗi trước khi xóa
+                if (!empty($public_id)) {
+                    try {
+                        Cloudinary::uploadApi()->destroy($public_id);
+                    } catch (\Exception $e) {
+                        // Bỏ qua lỗi nếu ảnh cũ không tồn tại trên Cloudinary
+                    }
+                }
             }
+
+            // 3. Upload ảnh mới
             $uploadResult = Cloudinary::uploadApi()->upload($request->file('anh')->getRealPath(), [
                 'folder' => 'khuyen_mai'
             ]);

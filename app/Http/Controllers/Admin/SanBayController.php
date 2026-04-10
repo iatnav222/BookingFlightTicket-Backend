@@ -137,8 +137,20 @@ class SanBayController extends Controller
         // Nếu có ảnh mới: xóa ảnh cũ trên Cloudinary rồi upload ảnh mới
         if ($request->hasFile('hinhAnh')) {
             if ($sanBay->hinhAnh) {
-                Cloudinary::uploadApi()->destroy($this->getCloudinaryPublicId($sanBay->hinhAnh));
+                // 1. Lấy public_id an toàn
+                $public_id = $this->getCloudinaryPublicId($sanBay->hinhAnh);
+                
+                // 2. Chặn lỗi trước khi xóa
+                if (!empty($public_id)) {
+                    try {
+                        Cloudinary::uploadApi()->destroy($public_id);
+                    } catch (\Exception $e) {
+                        // Bỏ qua lỗi nếu ảnh cũ không tồn tại trên Cloudinary
+                    }
+                }
             }
+
+            // 3. Upload ảnh mới
             $uploadResult = Cloudinary::uploadApi()->upload($request->file('hinhAnh')->getRealPath(), [
                 'folder' => 'san_bay'
             ]);
