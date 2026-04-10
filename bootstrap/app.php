@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+
+        $middleware->alias([
+            'admin' => App\Http\Middleware\AdminMiddleware::class,
+        ]);
         
         // Ngoại trừ các route này khỏi kiểm tra CSRF
         $middleware->validateCsrfTokens(except: [

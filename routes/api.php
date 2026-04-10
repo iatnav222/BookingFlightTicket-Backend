@@ -10,8 +10,15 @@ use App\Http\Controllers\Admin\AccountController as AdminAccountController;
 use App\Http\Controllers\Admin\DonHangController as AdminDonHangController;
 use App\Http\Controllers\Admin\KhuyenMaiController as AdminKhuyenMaiController;
 use App\Http\Controllers\Admin\GiaVeController as AdminGiaVeController;
+use App\Http\Controllers\AuthController;
+
+// AUTH (Sanctum)
+Route::prefix('auth')->group(function () {
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+});
 //API ADMIN
-Route::prefix('admin')->group(function () {
+Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
     
     // QUẢN LÝ CHUYẾN BAY
     Route::get('/chuyen-bay', [AdminChuyenBayController::class, 'index']);   // Get: Lấy Danh Sách
