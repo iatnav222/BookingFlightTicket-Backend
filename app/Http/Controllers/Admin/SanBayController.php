@@ -73,10 +73,10 @@ class SanBayController extends Controller
 
         // Upload ảnh lên Cloudinary
         if ($request->hasFile('hinhAnh')) {
-            $uploadResult = Cloudinary::upload($request->file('hinhAnh')->getRealPath(), [
+            $uploadResult = Cloudinary::uploadApi()->upload($request->file('hinhAnh')->getRealPath(), [
                 'folder' => 'san_bay'
             ]);
-            $validated['hinhAnh'] = $uploadResult->getSecurePath();
+            $validated['hinhAnh'] = $uploadResult['secure_url'];
         }
 
         $sanBay = SanBay::create($validated);
@@ -137,12 +137,12 @@ class SanBayController extends Controller
         // Nếu có ảnh mới: xóa ảnh cũ trên Cloudinary rồi upload ảnh mới
         if ($request->hasFile('hinhAnh')) {
             if ($sanBay->hinhAnh) {
-                Cloudinary::destroy($this->getCloudinaryPublicId($sanBay->hinhAnh));
+                Cloudinary::uploadApi()->destroy($this->getCloudinaryPublicId($sanBay->hinhAnh));
             }
-            $uploadResult = Cloudinary::upload($request->file('hinhAnh')->getRealPath(), [
+            $uploadResult = Cloudinary::uploadApi()->upload($request->file('hinhAnh')->getRealPath(), [
                 'folder' => 'san_bay'
             ]);
-            $validated['hinhAnh'] = $uploadResult->getSecurePath();
+            $validated['hinhAnh'] = $uploadResult['secure_url'];
         }
 
         $sanBay->update($validated);
@@ -179,7 +179,7 @@ class SanBayController extends Controller
 
         // Xóa ảnh trên Cloudinary (nếu có)
         if ($sanBay->hinhAnh) {
-            Cloudinary::destroy($this->getCloudinaryPublicId($sanBay->hinhAnh));
+            Cloudinary::uploadApi()->destroy($this->getCloudinaryPublicId($sanBay->hinhAnh));
         }
 
         $sanBay->delete();

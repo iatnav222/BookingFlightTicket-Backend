@@ -108,10 +108,10 @@ class KhuyenMaiController extends Controller
 
         // Upload ảnh lên Cloudinary
         if ($request->hasFile('anh')) {
-            $uploadResult = Cloudinary::upload($request->file('anh')->getRealPath(), [
+            $uploadResult = Cloudinary::uploadApi()->upload($request->file('anh')->getRealPath(), [
                 'folder' => 'khuyen_mai'
             ]);
-            $data['anh'] = $uploadResult->getSecurePath();
+            $data['anh'] = $uploadResult['secure_url'];
         }
 
         $maGiamGia = MaGiamGia::create($data);
@@ -201,12 +201,12 @@ class KhuyenMaiController extends Controller
         // Nếu có ảnh mới: xóa ảnh cũ trên Cloudinary rồi upload ảnh mới
         if ($request->hasFile('anh')) {
             if ($maGiamGia->anh) {
-                Cloudinary::destroy($this->getCloudinaryPublicId($maGiamGia->anh));
+                Cloudinary::uploadApi()->destroy($this->getCloudinaryPublicId($maGiamGia->anh));
             }
-            $uploadResult = Cloudinary::upload($request->file('anh')->getRealPath(), [
+            $uploadResult = Cloudinary::uploadApi()->upload($request->file('anh')->getRealPath(), [
                 'folder' => 'khuyen_mai'
             ]);
-            $data['anh'] = $uploadResult->getSecurePath();
+            $data['anh'] = $uploadResult['secure_url'];
         }
 
         $maGiamGia->update($data);
@@ -244,7 +244,7 @@ class KhuyenMaiController extends Controller
 
         // Xóa ảnh trên Cloudinary (nếu có)
         if ($maGiamGia->anh) {
-            Cloudinary::destroy($this->getCloudinaryPublicId($maGiamGia->anh));
+            Cloudinary::uploadApi()->destroy($this->getCloudinaryPublicId($maGiamGia->anh));
         }
 
         $maGiamGia->delete();

@@ -59,6 +59,11 @@ return [
             'throw' => false,
             'report' => false,
         ],
+         // THÊM ĐOẠN NÀY VÀO ĐÂY:
+        'cloudinary' => [
+            'driver' => 'cloudinary',
+            'url' => env('CLOUDINARY_URL'),
+        ],
 
     ],
 

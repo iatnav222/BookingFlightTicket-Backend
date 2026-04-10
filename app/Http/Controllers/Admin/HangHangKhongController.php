@@ -91,11 +91,11 @@ class HangHangKhongController extends Controller
 
         // Upload logo lên Cloudinary
         if ($request->hasFile('logo')) {
-            $uploadResult = Cloudinary::upload($request->file('logo')->getRealPath(), [
+            $uploadResult = Cloudinary::uploadApi()->upload($request->file('logo')->getRealPath(), [
                 'folder' => 'hang_hang_khong'
             ]);
             // Lưu URL đầy đủ vào DB
-            $data['logo'] = $uploadResult->getSecurePath();
+            $data['logo'] = $uploadResult['secure_url'];
         }
 
         $hangHangKhong = HangHangKhong::create($data);
@@ -169,12 +169,12 @@ class HangHangKhongController extends Controller
         // Nếu có ảnh mới: xóa ảnh cũ trên Cloudinary rồi upload ảnh mới
         if ($request->hasFile('logo')) {
             if ($hangHangKhong->logo) {
-                Cloudinary::destroy($this->getCloudinaryPublicId($hangHangKhong->logo));
+                Cloudinary::uploadApi()->destroy($this->getCloudinaryPublicId($hangHangKhong->logo));
             }
-            $uploadResult = Cloudinary::upload($request->file('logo')->getRealPath(), [
+            $uploadResult = Cloudinary::uploadApi()->upload($request->file('logo')->getRealPath(), [
                 'folder' => 'hang_hang_khong'
             ]);
-            $data['logo'] = $uploadResult->getSecurePath();
+            $data['logo'] = $uploadResult['secure_url'];
         }
 
         $hangHangKhong->update($data);
@@ -212,7 +212,7 @@ class HangHangKhongController extends Controller
 
         // Xóa ảnh trên Cloudinary (nếu có)
         if ($hangHangKhong->logo) {
-            Cloudinary::destroy($this->getCloudinaryPublicId($hangHangKhong->logo));
+            Cloudinary::uploadApi()->destroy($this->getCloudinaryPublicId($hangHangKhong->logo));
         }
 
         $hangHangKhong->delete();
