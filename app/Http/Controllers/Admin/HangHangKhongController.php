@@ -20,6 +20,7 @@ class HangHangKhongController extends Controller
         $path = parse_url($url, PHP_URL_PATH); // /cloud/image/upload/v123/hang_hang_khong/abc.jpg
         // Bỏ phần /cloud/image/upload/vXXX/
         $parts = explode('/upload/', $path);
+        if (count($parts) < 2) return ''; // Trả về rỗng nếu URL không hợp lệ
         $afterUpload = $parts[1]; // v123/hang_hang_khong/abc.jpg
         // Bỏ version nếu có (bắt đầu bằng v + số)
         $afterUpload = preg_replace('/^v\d+\//', '', $afterUpload);

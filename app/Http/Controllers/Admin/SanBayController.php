@@ -15,6 +15,7 @@ class SanBayController extends Controller
     {
         $path        = parse_url($url, PHP_URL_PATH);
         $parts       = explode('/upload/', $path);
+        if (count($parts) < 2) return ''; // Trả về rỗng nếu URL không hợp lệ
         $afterUpload = $parts[1];
         $afterUpload = preg_replace('/^v\d+\//', '', $afterUpload);
         return preg_replace('/\.[^.]+$/', '', $afterUpload);
