@@ -8,6 +8,8 @@ use App\Http\Controllers\Admin\MayBayController as AdminMayBayController;
 use App\Http\Controllers\Admin\SanBayController as AdminSanBayController;
 use App\Http\Controllers\Admin\AccountController as AdminAccountController;
 use App\Http\Controllers\Admin\DonHangController as AdminDonHangController;
+use App\Http\Controllers\Admin\KhuyenMaiController as AdminKhuyenMaiController;
+use App\Http\Controllers\Admin\GiaVeController as AdminGiaVeController;
 //API ADMIN
 Route::prefix('admin')->group(function () {
     
@@ -25,7 +27,7 @@ Route::prefix('admin')->group(function () {
     Route::put('/hang-hang-khong/{id}', [AdminHangHangKhongController::class, 'update']); // Put: Cập nhật
     Route::delete('/hang-hang-khong/{id}', [AdminHangHangKhongController::class, 'destroy']); //Delete: Xóa
 
-    // QUẢN LÝ MÁY BAY (bỏ comment route cũ + thêm đủ 5 route CRUD)
+    // QUẢN LÝ MÁY BAY
     Route::get('/may-bay',       [AdminMayBayController::class, 'index']);
     Route::post('/may-bay',      [AdminMayBayController::class, 'store']);
     Route::get('/may-bay/{id}',  [AdminMayBayController::class, 'show']);
@@ -51,6 +53,20 @@ Route::prefix('admin')->group(function () {
     Route::get('/don-hang/{id}',    [AdminDonHangController::class, 'show']);
     Route::put('/don-hang/{id}',    [AdminDonHangController::class, 'update']);
     Route::delete('/don-hang/{id}', [AdminDonHangController::class, 'destroy']);
+
+    // QUẢN LÝ KHUYẾN MÃI
+    Route::get('/khuyen-mai',         [AdminKhuyenMaiController::class, 'index']);
+    Route::post('/khuyen-mai',        [AdminKhuyenMaiController::class, 'store']);
+    Route::get('/khuyen-mai/{id}',    [AdminKhuyenMaiController::class, 'show']);
+    Route::put('/khuyen-mai/{id}',    [AdminKhuyenMaiController::class, 'update']);
+    Route::delete('/khuyen-mai/{id}', [AdminKhuyenMaiController::class, 'destroy']);
+
+    // QUẢN LÝ GIÁ VÉ
+    Route::get('/gia-ve',         [AdminGiaVeController::class, 'index']);
+    Route::post('/gia-ve',        [AdminGiaVeController::class, 'store']);
+    Route::get('/gia-ve/{id}',    [AdminGiaVeController::class, 'show']);
+    Route::put('/gia-ve/{id}',    [AdminGiaVeController::class, 'update']);
+    Route::delete('/gia-ve/{id}', [AdminGiaVeController::class, 'destroy']);
 
 });
 
