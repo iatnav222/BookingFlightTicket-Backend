@@ -41,10 +41,6 @@ class HangHangKhongController extends Controller
             });
         }
 
-        if ($request->has('trangThai') && $request->trangThai !== null) {
-            $query->where('trangThai', $request->trangThai);
-        }
-
         $danhSach = $query->orderBy('maHang', 'desc')->get();
 
         // logo trong DB đã là URL Cloudinary đầy đủ, chỉ cần map sang logo_url cho FE
