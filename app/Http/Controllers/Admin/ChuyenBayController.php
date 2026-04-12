@@ -29,7 +29,7 @@ class ChuyenBayController extends Controller
         // 3. Lọc theo Ngày khởi hành
         // FE sẽ gửi lên định dạng YYYY-MM-DD (VD: 2025-12-20). whereDate tự động bỏ qua phần giờ phút giây trong DB.
         if ($request->filled('ngayBay')) {
-            $query->whereDate('ngayGioCatCanh', $request->ngayDi);
+            $query->whereDate('ngayGioCatCanh', $request->ngayBay);
         }
         // 4. Lọc theo Hãng hàng không (Khách chỉ thích bay VietJet hoặc VN Airlines)
         if ($request->filled('maHang')) {
