@@ -44,9 +44,9 @@ class ChuyenBayController extends Controller
 
         // 6. Lọc theo trạng thái, Cho phép Admin lọc theo trạng thái (0: Hủy, 1: Hoạt động)
         // Dùng has() thay vì filled() vì giá trị 0 đôi khi bị filled() coi là rỗng
-        if ($request->has('trangThai') && $request->trangThai !== null) {
-            $query->where('trangThai', $request->trangThai);
-        }
+        // if ($request->has('trangThai') && $request->trangThai !== null) {
+        //     $query->where('trangThai', $request->trangThai);
+        // }
 
         // 7. Tìm kiếm nâng cao (Search)
         if ($request->filled('search')) {

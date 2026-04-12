@@ -33,11 +33,11 @@ class HangHangKhongController extends Controller
     {
         $query = HangHangKhong::query();
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('tenHang', 'like', "%{$search}%")
-                  ->orWhere('maCode', 'like', "%{$search}%");
+        if ($request->filled('keyword')) {
+            $keyword = $request->keyword;
+            $query->where(function ($q) use ($keyword) {
+                $q->where('tenHang', 'like', "%{$keyword}%")
+                  ->orWhere('maCode', 'like', "%{$keyword}%");
             });
         }
 
