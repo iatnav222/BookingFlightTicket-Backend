@@ -32,14 +32,14 @@ class MayBayController extends Controller
         }
 
         // 4. Tìm kiếm theo tên máy bay hoặc tên/mã hãng hàng không
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('tenMayBay', 'like', "%{$search}%")
-                  ->orWhere('hangSanXuat', 'like', "%{$search}%")
-                  ->orWhereHas('hang_hang_khong', function ($qHang) use ($search) {
-                      $qHang->where('tenHang', 'like', "%{$search}%")
-                            ->orWhere('maCode', 'like', "%{$search}%");
+        if ($request->filled('keyword')) {
+            $keyword = $request->keyword;
+            $query->where(function ($q) use ($keyword) {
+                $q->where('tenMayBay', 'like', "%{$keyword}%")
+                  ->orWhere('hangSanXuat', 'like', "%{$keyword}%")
+                  ->orWhereHas('hang_hang_khong', function ($qHang) use ($keyword) {
+                      $qHang->where('tenHang', 'like', "%{$keyword}%")
+                            ->orWhere('maCode', 'like', "%{$keyword}%");
                   });
             });
         }
