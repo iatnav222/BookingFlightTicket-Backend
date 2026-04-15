@@ -10,6 +10,9 @@ use App\Http\Controllers\Admin\AccountController as AdminAccountController;
 use App\Http\Controllers\Admin\DonHangController as AdminDonHangController;
 use App\Http\Controllers\Admin\KhuyenMaiController as AdminKhuyenMaiController;
 use App\Http\Controllers\Admin\GiaVeController as AdminGiaVeController;
+use App\Http\Controllers\Client\DanhMucController as ClientDanhMucController;
+use App\Http\Controllers\Client\ChuyenBayController as ClientChuyenBayController;
+use App\Http\Controllers\Client\KhuyenMaiController as ClientKhuyenMaiController;
 //API ADMIN
 Route::prefix('admin')->group(function () {
     
@@ -74,5 +77,14 @@ Route::prefix('admin')->group(function () {
 //API CLIENT
 Route::prefix('client')->group(function () {
     
-    // code api client
+    // META
+    Route::get('/san-bay', [ClientDanhMucController::class, 'danhSachSanBay']);
+    Route::get('/hang-hang-khong', [ClientDanhMucController::class, 'danhSachHangHangKhong']);
+
+    // CHUYẾN BAY (danh sách / chi tiết) phục vụ quy trình đặt vé
+    Route::get('/chuyen-bay', [ClientChuyenBayController::class, 'danhSach']);
+    Route::get('/chuyen-bay/{id}', [ClientChuyenBayController::class, 'chiTiet']);
+
+    // KHUYẾN MÃI (hiển thị)
+    Route::get('/khuyen-mai', [ClientKhuyenMaiController::class, 'danhSach']);
 });
