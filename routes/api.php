@@ -2,6 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+// Admin Controllers
 use App\Http\Controllers\Admin\ChuyenBayController as AdminChuyenBayController;
 use App\Http\Controllers\Admin\HangHangKhongController as AdminHangHangKhongController;
 use App\Http\Controllers\Admin\MayBayController as AdminMayBayController; 
@@ -10,17 +12,34 @@ use App\Http\Controllers\Admin\AccountController as AdminAccountController;
 use App\Http\Controllers\Admin\DonHangController as AdminDonHangController;
 use App\Http\Controllers\Admin\KhuyenMaiController as AdminKhuyenMaiController;
 use App\Http\Controllers\Admin\GiaVeController as AdminGiaVeController;
+
+// Client Controllers
 use App\Http\Controllers\Client\DanhMucController as ClientDanhMucController;
 use App\Http\Controllers\Client\ChuyenBayController as ClientChuyenBayController;
 use App\Http\Controllers\Client\KhuyenMaiController as ClientKhuyenMaiController;
-//API ADMIN
-Route::prefix('admin')->group(function () {
+
+// Auth Controller
+use App\Http\Controllers\AuthController;
+
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+*/
+
+// AUTHENTICATION (Các route không cần bảo vệ)
+Route::post('/login', [AuthController::class, 'login']);
+
+// API ADMIN (Đã được bọc Middleware bảo vệ: Phải đăng nhập VÀ phải là Admin)
+Route::middleware(['auth:sanctum', 'isAdmin'])
+    ->prefix('admin')
+    ->group(function () {
     
     // QUẢN LÝ CHUYẾN BAY
     Route::get('/chuyen-bay', [AdminChuyenBayController::class, 'index']);   // Get: Lấy Danh Sách
     Route::post('/chuyen-bay', [AdminChuyenBayController::class, 'store']);  // Post: Thêm mới
     Route::get('/chuyen-bay/{id}', [AdminChuyenBayController::class, 'show']); // Get: Hiển thị chi tiết 1 chuyến bay
-    Route::put('/chuyen-bay/{id}', [AdminChuyenBayController::class, 'update']); // Put: Cập nhật     
+    Route::put('/chuyen-bay/{id}', [AdminChuyenBayController::class, 'update']); // Put: Cập nhật    
     Route::delete('/chuyen-bay/{id}', [AdminChuyenBayController::class, 'destroy']);// Delete: Xóa 
 
     // QUẢN LÝ HÃNG BAY
@@ -37,7 +56,7 @@ Route::prefix('admin')->group(function () {
     Route::put('/may-bay/{id}',  [AdminMayBayController::class, 'update']);
     Route::delete('/may-bay/{id}', [AdminMayBayController::class, 'destroy']);
     
-    // QUẢN LÝ SÂN BAY (thêm mới hoàn toàn)
+    // QUẢN LÝ SÂN BAY
     Route::get('/san-bay',         [AdminSanBayController::class, 'index']);
     Route::post('/san-bay',        [AdminSanBayController::class, 'store']);
     Route::get('/san-bay/{id}',    [AdminSanBayController::class, 'show']);
@@ -73,8 +92,7 @@ Route::prefix('admin')->group(function () {
 
 });
 
-
-//API CLIENT
+// API CLIENT (Tạm thời là public, không yêu cầu đăng nhập)
 Route::prefix('client')->group(function () {
     
     // META

@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Http\Middleware\CheckAdmin; // <-- Nhớ thêm dòng use này ở trên cùng
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,6 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'users',
             'users/*',
+        ]);
+
+        // ĐĂNG KÝ MIDDLEWARE CỦA BẠN Ở ĐÂY
+        $middleware->alias([
+            'isAdmin' => CheckAdmin::class,
         ]);
 
     })

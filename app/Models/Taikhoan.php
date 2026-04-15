@@ -8,6 +8,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
+use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 /**
@@ -32,6 +33,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  */
 class Taikhoan extends Authenticatable
 {
+	use HasApiTokens;
+
 	protected $table = 'taikhoan';
 	protected $primaryKey = 'maTK';
 	public $timestamps = false;
