@@ -60,4 +60,15 @@ class AuthController extends Controller
             'data'         => $user
         ], 200);
     }
+    //chức năng đăng xuất
+    public function logout(Request $request)
+{
+    // Thu hồi (xóa) token mà user đang dùng để gọi request này
+    $request->user()->currentAccessToken()->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Đăng xuất thành công.'
+    ], 200);
+}
 }
