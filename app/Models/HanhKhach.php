@@ -41,13 +41,18 @@ class HanhKhach extends Model
 
 	protected $fillable = [
 		'maTK',
+		'ho',
+		'ten',
 		'hoTen',
 		'ngaySinh',
 		'gioiTinh',
 		'loaiHanhKhach',
 		'soCMND',
+		'soHoChieu',
+		'quocTich',
 		'email',
-		'sdt'
+		'sdt',
+		'soDienThoai',
 	];
 
 	public function taikhoan()
