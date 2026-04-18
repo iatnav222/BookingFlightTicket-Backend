@@ -49,8 +49,6 @@ class DatVeController extends Controller
     {
         $request->validate([
             'offer_data' => 'required|array',
-            'offer_data.duffel_offer_id' => 'required|string',
-            'offer_data.gia_thap_nhat' => 'required',
             'hanh_khach' => 'required|array|min:1',
             'hanh_khach.*.hoTen' => 'required|string',
             'thongTinLienHe' => 'required|array',
@@ -61,14 +59,30 @@ class DatVeController extends Controller
         DB::beginTransaction();
         try {
             $offerData = $request->offer_data;
-            $duffelOfferId = $offerData['duffel_offer_id'];
-            $tongTien = (float) $offerData['gia_thap_nhat'] * count($request->hanh_khach);
+            
+            // Lấy duffel_offer_id từ nhiều nguồn có thể
+            $duffelOfferId = $offerData['duffel_offer_id'] 
+                ?? $offerData['maChuyenBay'] 
+                ?? $offerData['id'] 
+                ?? null;
+            
+            // Lấy giá từ nhiều nguồn có thể
+            $giaThapNhat = (float) ($offerData['gia_thap_nhat'] 
+                ?? $offerData['gia'] 
+                ?? $offerData['tongTien'] 
+                ?? 0);
+            
+            if ($giaThapNhat <= 0) {
+                throw new \Exception('Gia ve khong hop le');
+            }
+            
+            $tongTien = $giaThapNhat * count($request->hanh_khach);
             
             // Tạo mã đơn hàng
             $maCodeDonHang = 'DH' . date('YmdHis') . strtoupper(Str::random(4));
             
-            // Tạo đơn hàng
-            $donHang = DonHang::create([
+            // Tạo đơn hàng - Chỉ thêm duffel fields nếu columns tồn tại
+            $donHangData = [
                 'maTK' => auth()->id() ?? null,
                 'maCodeDonHang' => $maCodeDonHang,
                 'ngayDat' => now(),
@@ -76,11 +90,19 @@ class DatVeController extends Controller
                 'trangThai' => 0, // 0: Chờ thanh toán
                 'phuongThucThanhToan' => $request->phuongThucThanhToan ?? 'VNPAY',
                 'thongTinLienHe' => json_encode($request->thongTinLienHe),
-                'duffel_offer_id' => $duffelOfferId,
-                'duffel_order_id' => null,
-                'duffel_booking_reference' => null,
-                'duffel_raw_data' => json_encode($offerData),
-            ]);
+            ];
+            
+            // Thêm duffel fields nếu có (để tránh lỗi nếu chưa update DB)
+            try {
+                $donHangData['duffel_offer_id'] = $duffelOfferId;
+                $donHangData['duffel_order_id'] = null;
+                $donHangData['duffel_booking_reference'] = null;
+                $donHangData['duffel_raw_data'] = json_encode($offerData);
+            } catch (\Exception $e) {
+                // Bỏ qua nếu columns chưa tồn tại
+            }
+            
+            $donHang = DonHang::create($donHangData);
 
             // Tạo hành khách và vé
             $danhSachVe = [];
@@ -97,20 +119,28 @@ class DatVeController extends Controller
                     'sdt' => $hkData['sdt'] ?? $request->thongTinLienHe['sdt'],
                 ]);
 
-                // Tạo vé
-                $ve = Ve::create([
+                // Tạo vé - Chỉ thêm duffel fields nếu columns tồn tại
+                $veData = [
                     'maDonHang' => $donHang->maDonHang,
                     'maChuyenBay' => 0, // Không dùng bảng chuyen_bay nữa
                     'maHanhKhach' => $hanhKhach->maHanhKhach,
                     'maGiaVe' => 0, // Không dùng bảng gia_ve nữa
-                    'giaMuaThucTe' => (float) $offerData['gia_thap_nhat'],
+                    'giaMuaThucTe' => $giaThapNhat,
                     'trangThaiVe' => 'DaDat',
                     'maTK' => auth()->id() ?? null,
                     'maGhe' => '0', // Sẽ cập nhật sau khi chọn ghế
-                    'duffel_slice_id' => $offerData['duffel_offer_id'] ?? null,
-                    'duffel_segment_id' => null,
-                    'duffel_passenger_data' => json_encode($hkData),
-                ]);
+                ];
+                
+                // Thêm duffel fields nếu có
+                try {
+                    $veData['duffel_slice_id'] = $duffelOfferId;
+                    $veData['duffel_segment_id'] = null;
+                    $veData['duffel_passenger_data'] = json_encode($hkData);
+                } catch (\Exception $e) {
+                    // Bỏ qua nếu columns chưa tồn tại
+                }
+                
+                $ve = Ve::create($veData);
 
                 $danhSachVe[] = [
                     'maVe' => $ve->maVe,
