@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    // API Dat ve may bay (Duffel)
+    'duffel' => [
+        'access_token' => env('DUFFEL_ACCESS_TOKEN'),
+        'api_version' => env('DUFFEL_API_VERSION', 'v2'),
+    ],
+
 ];

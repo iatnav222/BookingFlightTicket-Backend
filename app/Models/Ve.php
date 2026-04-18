@@ -56,7 +56,10 @@ class Ve extends Model
 		'trangThaiVe',
 		'maGiamGia',
 		'maTK',
-		'maGhe'
+		'maGhe',
+		'duffel_slice_id',
+		'duffel_segment_id',
+		'duffel_passenger_data',
 	];
 
 	public function don_hang()

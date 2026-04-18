@@ -50,7 +50,11 @@ class DonHang extends Model
 		'tongTien',
 		'phuongThucThanhToan',
 		'trangThai',
-		'thongTinLienHe'
+		'thongTinLienHe',
+		'duffel_offer_id',
+		'duffel_order_id',
+		'duffel_booking_reference',
+		'duffel_raw_data',
 	];
 
 	public function taikhoan()
