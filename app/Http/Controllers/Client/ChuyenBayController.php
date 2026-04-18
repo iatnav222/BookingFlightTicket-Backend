@@ -44,6 +44,7 @@ class ChuyenBayController extends Controller
                 // Lấy thông tin từ segments
                 $segments = $offer['chi_tiet_chuyen'] ?? [];
                 $firstSegment = $segments[0] ?? null;
+                $lastSegment = $segments[count($segments) - 1] ?? $firstSegment;
                 
                 // Thông tin hãng từ Duffel
                 $tenHang = $offer['hang_xac_nhan'] ?? 'Unknown Airline';
@@ -58,8 +59,9 @@ class ChuyenBayController extends Controller
                 }
                 
                 // Thông tin sân bay từ Duffel
-                $tenSanBayDi = $firstSegment['origin']['city_name'] ?? $maSanBayDi;
-                $tenSanBayDen = $firstSegment['destination']['city_name'] ?? $maSanBayDen;
+                // Lấy origin từ segment đầu tiên, destination từ segment cuối cùng
+                $tenSanBayDi = $firstSegment['origin']['city_name'] ?? $firstSegment['origin']['name'] ?? $maSanBayDi;
+                $tenSanBayDen = $lastSegment['destination']['city_name'] ?? $lastSegment['destination']['name'] ?? $maSanBayDen;
                 
                 $danhSachFormatted[] = [
                     // ID từ Duffel
