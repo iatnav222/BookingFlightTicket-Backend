@@ -3,13 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
-use App\Models\ChuyenBay;
-use App\Models\GiaVe;
-use App\Models\SanBay;
-use App\Models\HangHangKhong;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ChuyenBayController extends Controller
 {
@@ -29,50 +23,80 @@ class ChuyenBayController extends Controller
 
             $ketQuaDuffel = $dichVuDuffel->timChuyenBay($thamSoDuffel);
 
-            // Lấy danh sách sân bay từ DB để map tên
-            $sanBayMap = SanBay::pluck('tenSanBay', 'maCode')->toArray();
-            $sanBayHinhAnhMap = SanBay::pluck('hinhAnh', 'maCode')->toArray();
+            // Lấy tỷ giá từ config
+            $exchangeRates = config('currency.exchange_rates');
 
             // Format lại data để giống với format cũ cho FE
             $danhSachFormatted = [];
             foreach ($ketQuaDuffel['danh_sach'] as $offer) {
                 $maSanBayDi = $offer['di']['ma_san_bay'];
                 $maSanBayDen = $offer['den']['ma_san_bay'];
+                $tienTe = $offer['tien_te'];
+                $giaGoc = (float) $offer['gia'];
+                
+                // Quy đổi giá sang VND
+                $giaVND = $giaGoc;
+                if (isset($exchangeRates[$tienTe])) {
+                    $giaVND = $giaGoc * $exchangeRates[$tienTe];
+                }
+                $giaVND = round($giaVND, 0); // Làm tròn
+                
+                // Lấy thông tin từ segments
+                $segments = $offer['chi_tiet_chuyen'] ?? [];
+                $firstSegment = $segments[0] ?? null;
+                
+                // Thông tin hãng từ Duffel
+                $tenHang = $offer['hang_xac_nhan'] ?? 'Unknown Airline';
+                $logoHang = $offer['logo_hang'];
+                $maHang = null;
+                
+                if ($firstSegment) {
+                    $maHang = $firstSegment['marketing_carrier']['iata_code'] ?? null;
+                    if (!$tenHang || $tenHang === 'Unknown Airline') {
+                        $tenHang = $firstSegment['marketing_carrier']['name'] ?? 'Unknown Airline';
+                    }
+                }
+                
+                // Thông tin sân bay từ Duffel
+                $tenSanBayDi = $firstSegment['origin']['city_name'] ?? $maSanBayDi;
+                $tenSanBayDen = $firstSegment['destination']['city_name'] ?? $maSanBayDen;
                 
                 $danhSachFormatted[] = [
-                    // ID từ Duffel (không phải từ DB)
-                    'maChuyenBay' => $offer['id'], // Dùng offer_id làm ID tạm
+                    // ID từ Duffel
+                    'maChuyenBay' => $offer['id'],
                     
-                    // Thông tin hãng
+                    // Thông tin hãng từ Duffel
                     'hang_hang_khong' => [
-                        'tenHang' => $offer['hang_xac_nhan'],
-                        'logo' => $offer['logo_hang'],
-                        'maCode' => null,
+                        'tenHang' => $tenHang,
+                        'logo' => $logoHang,
+                        'maCode' => $maHang,
                     ],
                     
-                    // Thông tin sân bay (map với DB nếu có)
+                    // Thông tin sân bay từ Duffel
                     'san_bay_di' => [
                         'maCode' => $maSanBayDi,
-                        'tenSanBay' => $sanBayMap[$maSanBayDi] ?? $maSanBayDi,
-                        'hinhAnh' => $sanBayHinhAnhMap[$maSanBayDi] ?? null,
+                        'tenSanBay' => $tenSanBayDi,
+                        'hinhAnh' => null, // Duffel không cung cấp hình ảnh sân bay
                     ],
                     'san_bay_den' => [
                         'maCode' => $maSanBayDen,
-                        'tenSanBay' => $sanBayMap[$maSanBayDen] ?? $maSanBayDen,
-                        'hinhAnh' => $sanBayHinhAnhMap[$maSanBayDen] ?? null,
+                        'tenSanBay' => $tenSanBayDen,
+                        'hinhAnh' => null,
                     ],
                     
                     // Thời gian
                     'ngayGioCatCanh' => $offer['di']['thoi_gian'],
                     'ngayGioHaCanh' => $offer['den']['thoi_gian'],
                     
-                    // Giá (giá thấp nhất từ offer)
-                    'gia_thap_nhat' => $offer['gia'],
-                    'tien_te' => $offer['tien_te'],
+                    // Giá đã quy đổi sang VND
+                    'gia_thap_nhat' => $giaVND,
+                    'tien_te' => 'VND',
+                    'gia_goc' => $giaGoc,
+                    'tien_te_goc' => $tienTe,
                     
                     // Thông tin bổ sung
                     'chi_tiet_chuyen' => $offer['chi_tiet_chuyen'],
-                    'soGheConLai' => 999, // Không biết chính xác, để số lớn
+                    'soGheConLai' => 999,
                     'trangThai' => 1,
                     
                     // Lưu raw data để đặt vé sau
@@ -105,23 +129,22 @@ class ChuyenBayController extends Controller
         }
     }
 
-    // Chi tiet chuyen bay (offer) tu Duffel
-    // GET /api/client/chuyen-bay/{offer_id}
+    /**
+     * Xem chi tiết chuyến bay + giá vé từ Duffel offer
+     * GET /api/client/chuyen-bay/{offer_id}
+     */
     public function chiTiet(Request $request, $id)
     {
-        // $id ở đây là duffel_offer_id
-        // Vì FE gọi với offer_id từ danh sách, ta cần trả về chi tiết
+        // $id là duffel_offer_id
+        // Vì offer chỉ tồn tại trong thời gian ngắn, 
+        // FE nên lưu offer data từ danh sách tìm kiếm
         
-        // Tạm thời trả về thông báo cần implement
-        // Hoặc có thể lưu offer vào session/cache khi tìm kiếm
-        
+        // Tạm thời trả về message hướng dẫn
         return response()->json([
-            'success' => true,
-            'message' => 'Chi tiet offer',
-            'data' => [
-                'duffel_offer_id' => $id,
-                'note' => 'Offer details should be retrieved from Duffel API or cache'
-            ],
-        ], 200);
+            'success' => false,
+            'message' => 'Offer chi tiet can duoc lay tu danh sach tim kiem. Offer ID chi ton tai trong thoi gian ngan.',
+            'note' => 'FE nen luu offer data tu API /chuyen-bay khi tim kiem, khong goi lai API nay',
+            'duffel_offer_id' => $id,
+        ], 400);
     }
 }

@@ -84,6 +84,8 @@ Route::prefix('client')->group(function () {
     Route::post('/dat-ve/tao-don-hang', [ClientDatVeController::class, 'taoDonHang']);
     Route::get('/dat-ve/don-hang', [ClientDatVeController::class, 'danhSachDonHang']);
     Route::get('/dat-ve/don-hang/{id}', [ClientDatVeController::class, 'xemDonHang']);
+    Route::put('/dat-ve/don-hang/{id}/huy', [ClientDatVeController::class, 'huyDonHang']);
+    Route::get('/dat-ve/ve', [ClientDatVeController::class, 'danhSachVe']);
 
     // KHUYẾN MÃI (hiển thị)
     Route::get('/khuyen-mai', [ClientKhuyenMaiController::class, 'danhSach']);
