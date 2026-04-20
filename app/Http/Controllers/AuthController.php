@@ -62,13 +62,52 @@ class AuthController extends Controller
     }
     //chức năng đăng xuất
     public function logout(Request $request)
-{
-    // Thu hồi (xóa) token mà user đang dùng để gọi request này
-    $request->user()->currentAccessToken()->delete();
+    {
+        // Thu hồi (xóa) token mà user đang dùng để gọi request này
+        $request->user()->currentAccessToken()->delete();
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Đăng xuất thành công.'
-    ], 200);
-}
+        return response()->json([
+            'success' => true,
+            'message' => 'Đăng xuất thành công.'
+        ], 200);
+    }
+    
+     //chức năng đăng ký
+    public function register(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'username' => 'required|string|unique:taikhoan,username',
+            'email'    => 'required|email|unique:taikhoan,email',
+            'password' => 'required|string|min:6|confirmed',
+            'hoten'    => 'required|string',
+        ], [
+            'username.unique' => 'Tên đăng nhập đã tồn tại.',
+            'email.unique'    => 'Email đã được sử dụng.',
+            'password.min'    => 'Mật khẩu phải có ít nhất 6 ký tự.',
+            'password.confirmed' => 'Xác nhận mật khẩu không khớp.'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        $user = Taikhoan::create([
+            'username'  => $request->username,
+            'email'     => $request->email,
+            'password'  => Hash::make($request->password), // Bắt buộc phải mã hóa Bcrypt
+            'hoten'     => $request->hoten,
+            'quyen'     => 'user',       // Mặc định là khách hàng
+            'trangThai' => 1,            // Mặc định là hoạt động
+            'ngayTao'   => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đăng ký tài khoản thành công.',
+            'data'    => $user
+        ], 201);
+    }
 }

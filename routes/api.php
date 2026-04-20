@@ -27,6 +27,7 @@ use App\Http\Controllers\AuthController;
 
 // AUTHENTICATION (Các route không cần bảo vệ)
 Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::post('/register', [AuthController::class, 'register']);
 
 // API ADMIN (Đã được bọc Middleware bảo vệ: Phải đăng nhập VÀ phải là Admin)
 Route::middleware(['auth:sanctum', 'isAdmin'])
