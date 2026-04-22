@@ -25,23 +25,23 @@ use App\Http\Controllers\AuthController;
 |--------------------------------------------------------------------------
 */
 
-// AUTHENTICATION (Các route không cần bảo vệ)
+// AUTH
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/register', [AuthController::class, 'register']);
 
-// API ADMIN (Đã được bọc Middleware bảo vệ: Phải đăng nhập VÀ phải là Admin)
+// API ADMIN
 Route::middleware(['auth:sanctum', 'isAdmin'])
     ->prefix('admin')
     ->group(function () {
     
-    // QUẢN LÝ HÃNG BAY (Giữ lại để hiển thị thông tin, logo)
+    // QUẢN LÝ HÃNG BAY
     Route::get('/hang-hang-khong', [AdminHangHangKhongController::class, 'index']);
     Route::post('/hang-hang-khong', [AdminHangHangKhongController::class, 'store']);
     Route::get('/hang-hang-khong/{id}', [AdminHangHangKhongController::class, 'show']);
     Route::put('/hang-hang-khong/{id}', [AdminHangHangKhongController::class, 'update']);
     Route::delete('/hang-hang-khong/{id}', [AdminHangHangKhongController::class, 'destroy']);
     
-    // QUẢN LÝ SÂN BAY (Giữ lại để autocomplete, hiển thị thông tin)
+    // QUẢN LÝ SÂN BAY
     Route::get('/san-bay', [AdminSanBayController::class, 'index']);
     Route::post('/san-bay', [AdminSanBayController::class, 'store']);
     Route::get('/san-bay/{id}', [AdminSanBayController::class, 'show']);
@@ -55,7 +55,7 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
     Route::put('/tai-khoan/{id}', [AdminAccountController::class, 'update']);
     Route::delete('/tai-khoan/{id}', [AdminAccountController::class, 'destroy']);
 
-    // QUẢN LÝ ĐƠN HÀNG (Xem đơn hàng đã đặt qua Duffel)
+    // QUẢN LÝ ĐƠN HÀNG
     Route::get('/don-hang', [AdminDonHangController::class, 'index']);
     Route::get('/don-hang/{id}', [AdminDonHangController::class, 'show']);
     Route::put('/don-hang/{id}', [AdminDonHangController::class, 'update']);
@@ -70,24 +70,22 @@ Route::middleware(['auth:sanctum', 'isAdmin'])
 
 });
 
-// API CLIENT (Tạm thời là public, không yêu cầu đăng nhập)
+// API CLIENT
 Route::prefix('client')->group(function () {
     
     // META
     Route::get('/san-bay', [ClientDanhMucController::class, 'danhSachSanBay']);
     Route::get('/hang-hang-khong', [ClientDanhMucController::class, 'danhSachHangHangKhong']);
 
-    // CHUYẾN BAY (tìm kiếm từ Duffel API)
+    // CHUYẾN BAY
     Route::get('/chuyen-bay', [ClientChuyenBayController::class, 'danhSach']);
     Route::get('/chuyen-bay/{id}', [ClientChuyenBayController::class, 'chiTiet']);
 
-    // ĐẶT VÉ (tạo đơn hàng từ Duffel offer)
-    Route::post('/dat-ve/tao-don-hang', [ClientDatVeController::class, 'taoDonHang']);
-    Route::get('/dat-ve/don-hang', [ClientDatVeController::class, 'danhSachDonHang']);
-    Route::get('/dat-ve/don-hang/{id}', [ClientDatVeController::class, 'xemDonHang']);
-    Route::put('/dat-ve/don-hang/{id}/huy', [ClientDatVeController::class, 'huyDonHang']);
-    Route::get('/dat-ve/ve', [ClientDatVeController::class, 'danhSachVe']);
-
     // KHUYẾN MÃI (hiển thị)
     Route::get('/khuyen-mai', [ClientKhuyenMaiController::class, 'danhSach']);
+
+    // ĐẶT VÉ & THANH TOÁN
+    Route::post('/dat-ve/khoi-tao', [ClientDatVeController::class, 'khoiTaoDonHang']);
+    Route::post('/thanh-toan/vnpay', [ClientDatVeController::class, 'taoThanhToanVNPay']);
+    Route::get('/dat-ve/vnpay-return', [ClientDatVeController::class, 'vnpayReturn']);
 });

@@ -3,391 +3,270 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
-use App\Models\DonHang;
-use App\Models\Ve;
-use App\Models\HanhKhach;
-use App\DichVu\DichVuDuffel;
 use Illuminate\Http\Request;
+use App\Models\DonHang;
+use App\Models\HanhKhach;
+use App\Models\Ve;
+use App\Models\ThanhToan;
+use App\DichVu\DichVuDuffel;
+use App\Http\Requests\Client\KhoiTaoDonHangRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class DatVeController extends Controller
 {
-    protected $dichVuDuffel;
-
-    public function __construct(DichVuDuffel $dichVuDuffel)
-    {
-        $this->dichVuDuffel = $dichVuDuffel;
-    }
-
     /**
-     * Tạo đơn hàng từ Duffel offer
-     * POST /api/client/dat-ve/tao-don-hang
-     * 
-     * Body: {
-     *   "offer_data": {...}, // Toàn bộ offer data từ API tìm kiếm
-     *   "hanh_khach": [{
-     *     "ho": "Nguyen",
-     *     "ten": "Van A", 
-     *     "hoTen": "Nguyen Van A",
-     *     "ngaySinh": "1990-01-01",
-     *     "gioiTinh": "Nam",
-     *     "loaiHanhKhach": "NguoiLon",
-     *     "soHoChieu": "ABC123456",
-     *     "soCMND": "123456789",
-     *     "email": "test@example.com",
-     *     "sdt": "0123456789"
-     *   }],
-     *   "thongTinLienHe": {
-     *     "ten": "Nguyen Van A",
-     *     "email": "test@example.com",
-     *     "sdt": "0123456789"
-     *   }
-     * }
+     * BƯỚC 1: NHẬP THÔNG TIN VÀ KHỞI TẠO ĐƠN HÀNG (GIỮ CHỖ)
      */
-    public function taoDonHang(Request $request)
+    public function khoiTaoDonHang(KhoiTaoDonHangRequest $request)
     {
-        $request->validate([
-            'offer_data' => 'required|array',
-            'hanh_khach' => 'required|array|min:1',
-            'hanh_khach.*.hoTen' => 'required|string',
-            'thongTinLienHe' => 'required|array',
-            'thongTinLienHe.email' => 'required|email',
-            'thongTinLienHe.sdt' => 'required|string',
-        ]);
+        // Vì đã qua form request nên data chắc chắn đã an toàn, hợp lệ
+        $offerId = $request->input('duffel_offer_id');
+        $danhSachHanhKhach = $request->input('hanh_khach', []);
+        $thongTinLienHe = $request->input('thong_tin_lien_he', []);
+        $tongTien = $request->input('tong_tien', 0);
+        $offerRaw = $request->input('duffel_raw_data', null);
 
         DB::beginTransaction();
         try {
-            $offerData = $request->offer_data;
+            // 1. Tạo đơn hàng (Trạng thái = 0: Chờ thanh toán)
+            $maCodeDonHang = strtoupper(Str::random(8)); // Sinh mã đơn hàng ngẫu nhiên
             
-            // Lấy duffel_offer_id từ nhiều nguồn có thể
-            $duffelOfferId = $offerData['duffel_offer_id'] 
-                ?? $offerData['maChuyenBay'] 
-                ?? $offerData['id'] 
-                ?? null;
+            $donHang = new DonHang();
+            $donHang->maCodeDonHang = $maCodeDonHang;
+            $donHang->ngayDat = now();
+            $donHang->tongTien = $tongTien;
+            $donHang->phuongThucThanhToan = null;
+            $donHang->trangThai = 0; 
+            $donHang->thongTinLienHe = json_encode($thongTinLienHe);
             
-            // Lấy giá từ nhiều nguồn có thể
-            $giaThapNhat = (float) ($offerData['gia_thap_nhat'] 
-                ?? $offerData['gia'] 
-                ?? $offerData['tongTien'] 
-                ?? 0);
-            
-            if ($giaThapNhat <= 0) {
-                throw new \Exception('Gia ve khong hop le');
+            // Lưu field của Duffel
+            $donHang->duffel_offer_id = $offerId;
+            if ($offerRaw) {
+                $donHang->duffel_raw_data = is_array($offerRaw) ? json_encode($offerRaw) : $offerRaw;
             }
             
-            $tongTien = $giaThapNhat * count($request->hanh_khach);
-            
-            // Tạo mã đơn hàng
-            $maCodeDonHang = 'DH' . date('YmdHis') . strtoupper(Str::random(4));
-            
-            // Tạo đơn hàng - Chỉ thêm duffel fields nếu columns tồn tại
-            $donHangData = [
-                'maTK' => auth()->id() ?? null,
-                'maCodeDonHang' => $maCodeDonHang,
-                'ngayDat' => now(),
-                'tongTien' => $tongTien,
-                'trangThai' => 0, // 0: Chờ thanh toán
-                'phuongThucThanhToan' => $request->phuongThucThanhToan ?? 'VNPAY',
-                'thongTinLienHe' => json_encode($request->thongTinLienHe),
-            ];
-            
-            // Thêm duffel fields nếu có (để tránh lỗi nếu chưa update DB)
-            try {
-                $donHangData['duffel_offer_id'] = $duffelOfferId;
-                $donHangData['duffel_order_id'] = null;
-                $donHangData['duffel_booking_reference'] = null;
-                $donHangData['duffel_raw_data'] = json_encode($offerData);
-            } catch (\Exception $e) {
-                // Bỏ qua nếu columns chưa tồn tại
+            // Nếu có user đang đăng nhập
+            if (auth('sanctum')->check()) {
+                $donHang->maTK = auth('sanctum')->id();
             }
-            
-            $donHang = DonHang::create($donHangData);
 
-            // Tạo hành khách và vé
-            $danhSachVe = [];
-            foreach ($request->hanh_khach as $hkData) {
+            $donHang->save();
+
+            // 2. Lưu thông tin hành khách và vé tương ứng
+            foreach ($danhSachHanhKhach as $hkData) {
                 // Tạo hành khách
-                $hanhKhach = HanhKhach::create([
-                    'maTK' => auth()->id() ?? null,
-                    'hoTen' => $hkData['hoTen'],
-                    'ngaySinh' => $hkData['ngaySinh'] ?? now()->subYears(25),
-                    'gioiTinh' => $hkData['gioiTinh'] ?? 'Nam',
-                    'loaiHanhKhach' => $hkData['loaiHanhKhach'] ?? 'NguoiLon',
-                    'soCMND' => $hkData['soCMND'] ?? null,
-                    'email' => $hkData['email'] ?? $request->thongTinLienHe['email'],
-                    'sdt' => $hkData['sdt'] ?? $request->thongTinLienHe['sdt'],
-                ]);
+                $hk = new HanhKhach();
+                $hk->ho = $hkData['ho'] ?? '';
+                $hk->ten = $hkData['ten'] ?? '';
+                $hk->hoTen = trim($hk->ho . ' ' . $hk->ten);
+                $hk->ngaySinh = $hkData['ngaySinh'] ?? null;
+                $hk->gioiTinh = $hkData['gioiTinh'] ?? 'Khong xac dinh';
+                $hk->loaiHanhKhach = $hkData['loaiHanhKhach'] ?? 'adult';
+                $hk->soCMND = $hkData['soCMND'] ?? null;
+                $hk->email = $hkData['email'] ?? ($thongTinLienHe['email'] ?? null);
+                $hk->sdt = $hkData['soDienThoai'] ?? ($thongTinLienHe['soDienThoai'] ?? null);
+                $hk->save();
 
-                // Tạo vé - Chỉ thêm duffel fields nếu columns tồn tại
-                $veData = [
-                    'maDonHang' => $donHang->maDonHang,
-                    'maChuyenBay' => 0, // Không dùng bảng chuyen_bay nữa
-                    'maHanhKhach' => $hanhKhach->maHanhKhach,
-                    'maGiaVe' => 0, // Không dùng bảng gia_ve nữa
-                    'giaMuaThucTe' => $giaThapNhat,
-                    'trangThaiVe' => 'DaDat',
-                    'maTK' => auth()->id() ?? null,
-                    'maGhe' => '0', // Sẽ cập nhật sau khi chọn ghế
-                ];
+                // Tạo vé tham chiếu tới đơn hàng và hành khách
+                // Lưu ý: Do DB hiện tại yêu cầu maChuyenBay, maGiaVe nhưng ta đang dùng Duffel
+                // Tạm thời ta set maChuyenBay = 0 hoặc null nếu DB cho phép.
+                // Các bạn nên ALTER TABLE Ve để cho phép maChuyenBay nullable.
+                $ve = new Ve();
+                $ve->maDonHang = $donHang->maDonHang;
+                $ve->maHanhKhach = $hk->maHanhKhach;
+                $ve->maChuyenBay = $hkData['maChuyenBay'] ?? 0; // Để tạm 0 tránh lỗi nếu ko nullable
+                $ve->maGiaVe = 0; 
+                $ve->giaMuaThucTe = $tongTien / count($danhSachHanhKhach); // chia đều tạm
+                $ve->trangThaiVe = 'ChoXuatVe';
                 
-                // Thêm duffel fields nếu có
-                try {
-                    $veData['duffel_slice_id'] = $duffelOfferId;
-                    $veData['duffel_segment_id'] = null;
-                    $veData['duffel_passenger_data'] = json_encode($hkData);
-                } catch (\Exception $e) {
-                    // Bỏ qua nếu columns chưa tồn tại
+                // Save passenger ID of Duffel if passed from frontend
+                if (isset($hkData['duffel_passenger_id'])) {
+                    $ve->duffel_passenger_data = json_encode(['id' => $hkData['duffel_passenger_id']]);
                 }
-                
-                $ve = Ve::create($veData);
 
-                $danhSachVe[] = [
-                    'maVe' => $ve->maVe,
-                    'hanhKhach' => $hanhKhach->hoTen,
-                    'giaMuaThucTe' => $ve->giaMuaThucTe,
-                ];
+                $ve->save();
             }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Tao don hang thanh cong',
+                'message' => 'Khởi tạo đơn hàng thành công, vui lòng tiếp tục thanh toán',
                 'data' => [
                     'maDonHang' => $donHang->maDonHang,
-                    'maCodeDonHang' => $maCodeDonHang,
-                    'tongTien' => $tongTien,
-                    'trangThai' => 'ChoThanhToan',
-                    'danhSachVe' => $danhSachVe,
-                    'thongTinChuyenBay' => [
-                        'hangHangKhong' => $offerData['hang_hang_khong']['tenHang'] ?? null,
-                        'sanBayDi' => $offerData['san_bay_di']['tenSanBay'] ?? null,
-                        'sanBayDen' => $offerData['san_bay_den']['tenSanBay'] ?? null,
-                        'ngayGioBay' => $offerData['ngayGioCatCanh'] ?? null,
-                    ]
-                ],
-            ], 201);
+                    'maCodeDonHang' => $donHang->maCodeDonHang,
+                    'tongTien' => $donHang->tongTien
+                ]
+            ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Loi khi tao don hang: ' . $e->getMessage(),
+                'message' => 'Lỗi khi khởi tạo đơn hàng: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Xem chi tiết đơn hàng
-     * GET /api/client/dat-ve/don-hang/{id}
+     * BƯỚC 2: TẠO LINK THANH TOÁN VNPAY
      */
-    public function xemDonHang($id)
+    public function taoThanhToanVNPay(Request $request)
     {
-        $donHang = DonHang::with(['ves.hanh_khach'])
-            ->where('maDonHang', $id)
-            ->first();
+        $maDonHang = $request->input('maDonHang');
+        $donHang = DonHang::find($maDonHang);
 
         if (!$donHang) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Khong tim thay don hang',
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy đơn hàng'], 404);
         }
 
-        // Parse thông tin chuyến bay từ duffel_raw_data
-        $offerData = json_decode($donHang->duffel_raw_data, true);
+        // Cấu hình VNPay (Nên để trong config/services.php hoặc .env)
+        $vnp_TmnCode = env('VNP_TMN_CODE', 'YOUR_VNPAY_TMN_CODE'); // Thay bằng mã của bạn
+        $vnp_HashSecret = env('VNP_HASH_SECRET', 'YOUR_VNPAY_HASH_SECRET'); // Thay bằng chuỗi bí mật của bạn
+        $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
         
+        // Frontend hoặc Backend URL xử lý return
+        $vnp_Returnurl = url('/api/client/dat-ve/vnpay-return'); 
+
+        $vnp_TxnRef = $donHang->maCodeDonHang . '_' . time(); // Mã giao dịch unique
+        $vnp_OrderInfo = "Thanh toan don hang may bay " . $donHang->maCodeDonHang;
+        $vnp_OrderType = 'billpayment';
+        $vnp_Amount = $donHang->tongTien * 100; // VNPay yêu cầu x100
+        $vnp_Locale = 'vn';
+        $vnp_IpAddr = $request->ip();
+
+        $inputData = array(
+            "vnp_Version" => "2.1.0",
+            "vnp_TmnCode" => $vnp_TmnCode,
+            "vnp_Amount" => $vnp_Amount,
+            "vnp_Command" => "pay",
+            "vnp_CreateDate" => date('YmdHis'),
+            "vnp_CurrCode" => "VND",
+            "vnp_IpAddr" => $vnp_IpAddr,
+            "vnp_Locale" => $vnp_Locale,
+            "vnp_OrderInfo" => $vnp_OrderInfo,
+            "vnp_OrderType" => $vnp_OrderType,
+            "vnp_ReturnUrl" => $vnp_Returnurl,
+            "vnp_TxnRef" => $vnp_TxnRef
+        );
+
+        if ($request->has('bank_code') && $request->input('bank_code') != '') {
+            $inputData['vnp_BankCode'] = $request->input('bank_code');
+        }
+
+        ksort($inputData);
+        $query = "";
+        $i = 0;
+        $hashdata = "";
+        foreach ($inputData as $key => $value) {
+            if ($i == 1) {
+                $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
+            } else {
+                $hashdata .= urlencode($key) . "=" . urlencode($value);
+                $i = 1;
+            }
+            $query .= urlencode($key) . "=" . urlencode($value) . '&';
+        }
+
+        $vnp_Url = $vnp_Url . "?" . $query;
+        if (isset($vnp_HashSecret)) {
+            $vnpSecureHash = hash_hmac('sha512', $hashdata, $vnp_HashSecret);
+            $vnp_Url .= 'vnp_SecureHash=' . $vnpSecureHash;
+        }
+
         return response()->json([
             'success' => true,
-            'message' => 'Lay thong tin don hang thanh cong',
+            'message' => 'Tạo link VNPay thành công',
             'data' => [
-                'maDonHang' => $donHang->maDonHang,
-                'maCodeDonHang' => $donHang->maCodeDonHang,
-                'ngayDat' => $donHang->ngayDat,
-                'tongTien' => $donHang->tongTien,
-                'trangThai' => $this->getTrangThaiText($donHang->trangThai),
-                'phuongThucThanhToan' => $donHang->phuongThucThanhToan,
-                'thongTinLienHe' => json_decode($donHang->thongTinLienHe),
-                'thongTinChuyenBay' => $offerData,
-                'danhSachVe' => $donHang->ves->map(function($ve) {
-                    return [
-                        'maVe' => $ve->maVe,
-                        'hanhKhach' => $ve->hanh_khach->hoTen ?? null,
-                        'loaiHanhKhach' => $ve->hanh_khach->loaiHanhKhach ?? null,
-                        'giaMuaThucTe' => $ve->giaMuaThucTe,
-                        'trangThaiVe' => $ve->trangThaiVe,
-                        'maGhe' => $ve->maGhe,
-                    ];
-                }),
-            ],
-        ], 200);
+                'payment_url' => $vnp_Url
+            ]
+        ]);
     }
 
     /**
-     * Danh sách đơn hàng của user
-     * GET /api/client/dat-ve/don-hang
+     * BƯỚC 3: XỬ LÝ KẾT QUẢ TRẢ VỀ TỪ VNPAY
      */
-    public function danhSachDonHang(Request $request)
+    public function vnpayReturn(Request $request)
     {
-        $query = DonHang::with(['ves.hanh_khach'])
-            ->orderBy('ngayDat', 'desc');
+        $vnp_HashSecret = env('VNP_HASH_SECRET', 'YOUR_VNPAY_HASH_SECRET');
 
-        // Nếu có user đăng nhập, lọc theo user
-        if (auth()->check()) {
-            $query->where('maTK', auth()->id());
+        $inputData = array();
+        foreach ($request->all() as $key => $value) {
+            if (substr($key, 0, 4) == "vnp_") {
+                $inputData[$key] = $value;
+            }
+        }
+        
+        $vnp_SecureHash = $inputData['vnp_SecureHash'] ?? '';
+        unset($inputData['vnp_SecureHash']);
+        unset($inputData['vnp_SecureHashType']);
+        ksort($inputData);
+        $i = 0;
+        $hashData = "";
+        foreach ($inputData as $key => $value) {
+            if ($i == 1) {
+                $hashData = $hashData . '&' . urlencode($key) . "=" . urlencode($value);
+            } else {
+                $hashData = $hashData . urlencode($key) . "=" . urlencode($value);
+                $i = 1;
+            }
         }
 
-        // Lọc theo trạng thái
-        if ($request->filled('trangThai')) {
-            $query->where('trangThai', $request->trangThai);
+        $secureHash = hash_hmac('sha512', $hashData, $vnp_HashSecret);
+
+        // Mã đơn hàng ban đầu được tách từ TxnRef (Do lúc tạo có nối thêm time())
+        $txnRefParts = explode('_', $inputData['vnp_TxnRef']);
+        $maCodeDonHang = $txnRefParts[0];
+
+        $donHang = DonHang::where('maCodeDonHang', $maCodeDonHang)->first();
+
+        // FRONTEND URL ĐỂ REDIRECT VỀ (Cấu hình domain FE của bạn)
+        $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173') . '/thanh-toan/ket-qua';
+
+        if ($secureHash == $vnp_SecureHash) {
+            // Tạo bản ghi lịch sử thanh toán vào bảng thanh_toan
+            if ($donHang) {
+                $thanhToan = new ThanhToan();
+                $thanhToan->maDonHang = $donHang->maDonHang;
+                $thanhToan->phuongThuc = 'VNPAY';
+                $thanhToan->maGiaoDich = $inputData['vnp_TransactionNo'] ?? null;
+                $thanhToan->soTien = $inputData['vnp_Amount'] ? ($inputData['vnp_Amount'] / 100) : 0;
+                $thanhToan->ngayThanhToan = now();
+                $thanhToan->noiDung = $inputData['vnp_OrderInfo'] ?? 'Thanh toan VNPay';
+            }
+
+            if ($inputData['vnp_ResponseCode'] == '00') {
+                // Thanh toán thành công
+                if ($donHang && $donHang->trangThai == 0) {
+                    $donHang->trangThai = 1; // Đã thanh toán
+                    $donHang->phuongThucThanhToan = 'VNPAY';
+                    $donHang->save();
+
+                    $thanhToan->trangThai = 'ThanhCong';
+                    $thanhToan->save();
+
+                    // LÝ TƯỞNG: Gọi API Duffel ở đây để Create Order chính thức
+                    // $duffel = new DichVuDuffel();
+                    // $duffel->taoDonHang($donHang->duffel_offer_id, ...);
+                }
+
+                // Redirect về FE kèm params thành công
+                return redirect()->away($frontendUrl . "?status=success&maCode=" . $maCodeDonHang);
+            } else {
+                // Thanh toán thất bại
+                if ($donHang) {
+                    $donHang->trangThai = 2; // Thanh toán lỗi/hủy
+                    $donHang->save();
+                    
+                    $thanhToan->trangThai = 'ThatBai';
+                    $thanhToan->save();
+                }
+                return redirect()->away($frontendUrl . "?status=failed&maCode=" . $maCodeDonHang . "&reason=vnpay_error");
+            }
+        } else {
+            // Chữ ký không hợp lệ
+            return redirect()->away($frontendUrl . "?status=failed&maCode=" . $maCodeDonHang . "&reason=invalid_signature");
         }
-
-        $perPage = (int) $request->get('perPage', 10);
-        $danhSach = $query->paginate($perPage);
-
-        $data = $danhSach->items();
-        $formatted = array_map(function($donHang) {
-            $offerData = json_decode($donHang->duffel_raw_data, true);
-            return [
-                'maDonHang' => $donHang->maDonHang,
-                'maCodeDonHang' => $donHang->maCodeDonHang,
-                'ngayDat' => $donHang->ngayDat,
-                'tongTien' => $donHang->tongTien,
-                'trangThai' => $this->getTrangThaiText($donHang->trangThai),
-                'soLuongVe' => $donHang->ves->count(),
-                'thongTinChuyenBay' => [
-                    'hangHangKhong' => $offerData['hang_hang_khong']['tenHang'] ?? null,
-                    'sanBayDi' => $offerData['san_bay_di']['tenSanBay'] ?? null,
-                    'sanBayDen' => $offerData['san_bay_den']['tenSanBay'] ?? null,
-                    'ngayGioBay' => $offerData['ngayGioCatCanh'] ?? null,
-                ],
-            ];
-        }, $data);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Lay danh sach don hang thanh cong',
-            'data' => $formatted,
-            'pagination' => [
-                'current_page' => $danhSach->currentPage(),
-                'last_page' => $danhSach->lastPage(),
-                'per_page' => $danhSach->perPage(),
-                'total' => $danhSach->total(),
-            ],
-        ], 200);
-    }
-
-    /**
-     * Danh sách vé của user
-     * GET /api/client/dat-ve/ve
-     */
-    public function danhSachVe(Request $request)
-    {
-        $query = Ve::with(['hanh_khach', 'don_hang'])
-            ->orderBy('maVe', 'desc');
-
-        // Nếu có user đăng nhập, lọc theo user
-        if (auth()->check()) {
-            $query->where('maTK', auth()->id());
-        }
-
-        // Lọc theo trạng thái vé
-        if ($request->filled('trangThaiVe')) {
-            $query->where('trangThaiVe', $request->trangThaiVe);
-        }
-
-        $perPage = (int) $request->get('perPage', 10);
-        $danhSach = $query->paginate($perPage);
-
-        $data = $danhSach->items();
-        $formatted = array_map(function($ve) {
-            $offerData = json_decode($ve->don_hang->duffel_raw_data ?? '{}', true);
-            return [
-                'maVe' => $ve->maVe,
-                'maCodeDonHang' => $ve->don_hang->maCodeDonHang ?? null,
-                'hanhKhach' => $ve->hanh_khach->hoTen ?? null,
-                'loaiHanhKhach' => $ve->hanh_khach->loaiHanhKhach ?? null,
-                'giaMuaThucTe' => $ve->giaMuaThucTe,
-                'trangThaiVe' => $ve->trangThaiVe,
-                'maGhe' => $ve->maGhe,
-                'thongTinChuyenBay' => [
-                    'hangHangKhong' => $offerData['hang_hang_khong']['tenHang'] ?? null,
-                    'sanBayDi' => $offerData['san_bay_di']['tenSanBay'] ?? null,
-                    'sanBayDen' => $offerData['san_bay_den']['tenSanBay'] ?? null,
-                    'ngayGioBay' => $offerData['ngayGioCatCanh'] ?? null,
-                ],
-            ];
-        }, $data);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Lay danh sach ve thanh cong',
-            'data' => $formatted,
-            'pagination' => [
-                'current_page' => $danhSach->currentPage(),
-                'last_page' => $danhSach->lastPage(),
-                'per_page' => $danhSach->perPage(),
-                'total' => $danhSach->total(),
-            ],
-        ], 200);
-    }
-
-    /**
-     * Hủy đơn hàng
-     * PUT /api/client/dat-ve/don-hang/{id}/huy
-     */
-    public function huyDonHang($id)
-    {
-        $donHang = DonHang::where('maDonHang', $id)->first();
-
-        if (!$donHang) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Khong tim thay don hang',
-            ], 404);
-        }
-
-        // Kiểm tra quyền (chỉ user tạo đơn mới được hủy)
-        if (auth()->check() && $donHang->maTK != auth()->id()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ban khong co quyen huy don hang nay',
-            ], 403);
-        }
-
-        // Chỉ cho phép hủy đơn hàng chưa thanh toán
-        if ($donHang->trangThai != 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Chi co the huy don hang chua thanh toan',
-            ], 400);
-        }
-
-        // Cập nhật trạng thái
-        $donHang->trangThai = 3; // 3: Đã hủy
-        $donHang->save();
-
-        // Cập nhật trạng thái vé
-        Ve::where('maDonHang', $id)->update(['trangThaiVe' => 'DaHuy']);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Huy don hang thanh cong',
-        ], 200);
-    }
-
-    /**
-     * Helper: Chuyển mã trạng thái thành text
-     */
-    private function getTrangThaiText($trangThai)
-    {
-        $map = [
-            0 => 'ChoThanhToan',
-            1 => 'DaThanhToan',
-            2 => 'DaXacNhan',
-            3 => 'DaHuy',
-        ];
-        return $map[$trangThai] ?? 'KhongXacDinh';
     }
 }
