@@ -1,0 +1,18 @@
+{
+  "duffel_offer_id": "off_0000B5W9dwQUWjTC5hvbFp",
+  "tong_tien": 1122930,
+  "thong_tin_lien_he": {
+    "email": "nguyenvana@gmail.com",
+    "soDienThoai": "0912345678"
+  },
+  "hanh_khach": [
+    {
+      "ho": "Nguyen",
+      "ten": "Van A",
+      "ngaySinh": "1995-10-25",
+      "gioiTinh": "Nam",
+      "loaiHanhKhach": "adult",
+      "soCMND": "0123456789"
+    }
+  ]
+}

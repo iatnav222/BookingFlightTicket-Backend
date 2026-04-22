@@ -57,9 +57,9 @@ class DatVeController extends Controller
             foreach ($danhSachHanhKhach as $hkData) {
                 // Tạo hành khách
                 $hk = new HanhKhach();
-                $hk->ho = $hkData['ho'] ?? '';
-                $hk->ten = $hkData['ten'] ?? '';
-                $hk->hoTen = trim($hk->ho . ' ' . $hk->ten);
+                $hoTemp = $hkData['ho'] ?? '';
+                $tenTemp = $hkData['ten'] ?? '';
+                $hk->hoTen = trim($hoTemp . ' ' . $tenTemp);
                 $hk->ngaySinh = $hkData['ngaySinh'] ?? null;
                 $hk->gioiTinh = $hkData['gioiTinh'] ?? 'Khong xac dinh';
                 $hk->loaiHanhKhach = $hkData['loaiHanhKhach'] ?? 'adult';
@@ -75,11 +75,11 @@ class DatVeController extends Controller
                 $ve = new Ve();
                 $ve->maDonHang = $donHang->maDonHang;
                 $ve->maHanhKhach = $hk->maHanhKhach;
-                $ve->maChuyenBay = $hkData['maChuyenBay'] ?? 0; // Để tạm 0 tránh lỗi nếu ko nullable
-                $ve->maGiaVe = 0; 
+                $ve->maChuyenBay = $hkData['maChuyenBay'] ?? null; // Đã đổi thành null thay vì 0 để tránh bắt lỗi Khóa Ngoại
+                $ve->maGiaVe = null; 
                 $ve->giaMuaThucTe = $tongTien / count($danhSachHanhKhach); // chia đều tạm
                 $ve->trangThaiVe = 'ChoXuatVe';
-                
+                $ve->maGhe = '-'; // Rút gọn lại vì cột mã ghế trong DB được thiết kế độ dài khá ngắn (VD: varchar(5))
                 // Save passenger ID of Duffel if passed from frontend
                 if (isset($hkData['duffel_passenger_id'])) {
                     $ve->duffel_passenger_data = json_encode(['id' => $hkData['duffel_passenger_id']]);

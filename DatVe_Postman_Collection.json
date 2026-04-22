@@ -1,0 +1,99 @@
+{
+	"info": {
+		"_postman_id": "b3e1f1c2-1234-4567-89ab-cdef01234567",
+		"name": "Quy Trình Đặt Vé Máy Bay",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Khởi tạo đơn hàng (Giữ chỗ)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"duffel_offer_id\": \"off_0000B5W9dwQUWjTC5hvbFp\",\r\n  \"tong_tien\": 1122930,\r\n  \"thong_tin_lien_he\": {\r\n    \"email\": \"nguyenvana@gmail.com\",\r\n    \"soDienThoai\": \"0912345678\"\r\n  },\r\n  \"hanh_khach\": [\r\n    {\r\n      \"ho\": \"Nguyen\",\r\n      \"ten\": \"Van A\",\r\n      \"ngaySinh\": \"1995-10-25\",\r\n      \"gioiTinh\": \"Nam\",\r\n      \"loaiHanhKhach\": \"adult\",\r\n      \"soCMND\": \"0123456789\"\r\n    }\r\n  ]\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/client/dat-ve/khoi-tao",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"client",
+						"dat-ve",
+						"khoi-tao"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2. Lấy Link Thanh Toán VNPay",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"maDonHang\": 1\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/client/thanh-toan/vnpay",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"client",
+						"thanh-toan",
+						"vnpay"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
