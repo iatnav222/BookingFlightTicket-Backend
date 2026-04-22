@@ -89,9 +89,16 @@ Lúc người dùng bấm "Tiếp tục" (hoặc "Đặt vé"), gọi API này �
 
 Sau khi người dùng thanh toán xong trên giao diện VNPAY (nhập thẻ test Sandbox), VNPAY sẽ tự động redirect về đường dẫn Backend API `GET /api/client/dat-ve/vnpay-return`.
 
+> **Thông tin Thẻ Test Sandbox :**
+> - **Ngân hàng:** NCB
+> - **Số thẻ:** `9704198526191432198`
+> - **Tên chủ thẻ:** `NGUYEN VAN A`
+> - **Ngày phát hành:** `07/15`
+> - **Mật khẩu OTP:** `123456`
+
 Backend sau khi kiểm tra mã bảo mật và lưu kết quả vào bảng `thanh_toan`, sẽ **tự động chuyển hướng (redirect) ngược lại về FRONTEND**.
 
-**Giao diện FE cần chuẩn bị:**
+**Giao diện cần chuẩn bị:**
 Frontend cần tạo một route Component (ví dụ `/thanh-toan/ket-qua`). Backend sẽ redirect về trang này với các tham số trên URL:
 - Thành công: `https://booking-flight-ticket-frontend.vercel.app/thanh-toan/ket-qua?status=success&maCode=XY8A1ZOP`
 - Thất bại: `https://booking-flight-ticket-frontend.vercel.app/thanh-toan/ket-qua?status=failed&maCode=XY8A1ZOP&reason=vnpay_error`

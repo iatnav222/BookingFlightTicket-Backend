@@ -50,9 +50,14 @@ class DonHangController extends Controller
         $perPage  = $request->get('perPage', 10);
         $danhSach = $query->orderBy('ngayDat', 'desc')->paginate($perPage);
 
-        // Decode thongTinLienHe từ JSON string sang object cho FE dễ dùng
+        // Decode thongTinLienHe và duffel_raw_data từ JSON string sang object cho FE dễ dùng
         $items = collect($danhSach->items())->map(function ($item) {
-            $item->thongTinLienHe = json_decode($item->thongTinLienHe);
+            if (is_string($item->thongTinLienHe)) {
+                $item->thongTinLienHe = json_decode($item->thongTinLienHe);
+            }
+            if (!empty($item->duffel_raw_data) && is_string($item->duffel_raw_data)) {
+                $item->duffel_raw_data = json_decode($item->duffel_raw_data);
+            }
             return $item;
         });
 
@@ -94,8 +99,21 @@ class DonHangController extends Controller
             ], 404);
         }
 
-        // Decode thongTinLienHe từ JSON string sang object
-        $donhang->thongTinLienHe = json_decode($donhang->thongTinLienHe);
+        // Decode thongTinLienHe và duffel_raw_data từ JSON string sang object
+        if (is_string($donhang->thongTinLienHe)) {
+            $donhang->thongTinLienHe = json_decode($donhang->thongTinLienHe);
+        }
+        if (!empty($donhang->duffel_raw_data) && is_string($donhang->duffel_raw_data)) {
+            $donhang->duffel_raw_data = json_decode($donhang->duffel_raw_data);
+        }
+
+        if ($donhang->ves) {
+            foreach ($donhang->ves as $ve) {
+                if (!empty($ve->duffel_passenger_data) && is_string($ve->duffel_passenger_data)) {
+                    $ve->duffel_passenger_data = json_decode($ve->duffel_passenger_data);
+                }
+            }
+        }
 
         return response()->json([
             'success' => true,
