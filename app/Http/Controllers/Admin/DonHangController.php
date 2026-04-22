@@ -16,8 +16,8 @@ class DonHangController extends Controller
     // =============================================
     public function index(Request $request)
     {
-        $query = DonHang::with('taikhoan');
-
+        // Chỉ lấy các đơn hàng mới từ hệ thống Duffel (bỏ qua dữ liệu cũ)
+        $query = DonHang::with('taikhoan')->whereNotNull('duffel_offer_id');
         // 1. Tìm kiếm theo mã đơn hàng hoặc thông tin liên hệ (tên/email/sdt)
         if ($request->filled('search')) {
             $search = $request->search;
@@ -85,11 +85,6 @@ class DonHangController extends Controller
             'taikhoan',
             'thanh_toans',
             'ves.hanh_khach',
-            'ves.chuyen_bay.hang_hang_khong',
-            'ves.chuyen_bay.san_bay_di',
-            'ves.chuyen_bay.san_bay_den',
-            'ves.gia_ve',
-            'ves.ma_giam_gia',
         ])->find($id);
 
         if (!$donhang) {
